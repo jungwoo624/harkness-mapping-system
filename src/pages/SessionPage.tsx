@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { HarknessTable } from '../components/HarknessTable'
-import { SessionReport } from '../components/SessionReport'
+import { ReportPage } from './ReportPage'
 import type { Session, SpeechRecord, Student } from '../types'
 import { createStudents, durationInMinutes } from '../utils/session'
 import { getAllSessions, saveSession } from '../utils/sessionStorage'
@@ -143,7 +143,7 @@ export function SessionPage() {
 
         {endedSession && (
           <div className="mt-8">
-            <SessionReport session={endedSession} />
+            <ReportPage session={endedSession} />
           </div>
         )}
 
