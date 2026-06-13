@@ -4,6 +4,10 @@ import type { SpeechRecord, Student } from '../types'
 interface HarknessTableProps {
   /** 원형 테이블 둘레에 배치할 학생 목록 */
   students: Student[]
+  /** 누적된 발언 기록 (상위에서 관리) */
+  speechRecords: SpeechRecord[]
+  /** 새 발언 기록이 생성될 때 호출 */
+  onAddSpeech: (record: SpeechRecord) => void
 }
 
 const CANVAS_WIDTH = 500
@@ -94,9 +98,12 @@ function buildArrowPath(
 }
 
 /** 하크니스 원형 테이블 + 학생 좌석 + 발언 화살표. 발언 횟수에 따라 좌석 크기/색이 변한다. */
-export function HarknessTable({ students }: HarknessTableProps) {
+export function HarknessTable({
+  students,
+  speechRecords,
+  onAddSpeech,
+}: HarknessTableProps) {
   const [selectedSpeakerId, setSelectedSpeakerId] = useState<string | null>(null)
-  const [speechRecords, setSpeechRecords] = useState<SpeechRecord[]>([])
 
   const findStudent = (id: string): Student | undefined =>
     students.find((student) => student.id === id)
@@ -111,35 +118,13 @@ export function HarknessTable({ students }: HarknessTableProps) {
       return
     }
     const now = Date.now()
-    const record: SpeechRecord = {
-      id: now.toString(),
+    onAddSpeech({
+      id: `${now}-${speechRecords.length}`,
       speakerId: selectedSpeakerId,
       targetId: studentId,
       timestamp: now,
-    }
-    setSpeechRecords((prev) => [...prev, record])
+    })
     setSelectedSpeakerId(null)
-  }
-
-  // ⚠️ 임시(TEMP): 다음 단계에서 제거할 테스트용 버튼 핸들러.
-  // 랜덤한 서로 다른 두 학생 사이의 발언 기록을 추가한다.
-  const addRandomSpeech = (): void => {
-    if (students.length < 2) return
-    const speakerIndex = Math.floor(Math.random() * students.length)
-    let targetIndex = Math.floor(Math.random() * students.length)
-    while (targetIndex === speakerIndex) {
-      targetIndex = Math.floor(Math.random() * students.length)
-    }
-    const now = Date.now()
-    setSpeechRecords((prev) => [
-      ...prev,
-      {
-        id: `${now}-${prev.length}`,
-        speakerId: students[speakerIndex].id,
-        targetId: students[targetIndex].id,
-        timestamp: now,
-      },
-    ])
   }
 
   const selectedStudent =
@@ -181,16 +166,6 @@ export function HarknessTable({ students }: HarknessTableProps) {
       <p className="text-sm font-medium text-slate-700" data-testid="status-text">
         {statusText}
       </p>
-
-      {/* ⚠️ 임시(TEMP) 버튼: 발언 횟수에 따른 크기/색 변화 확인용. 다음 단계에서 제거 예정. */}
-      <button
-        type="button"
-        onClick={addRandomSpeech}
-        data-testid="add-random-speech"
-        className="rounded-lg bg-amber-500 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-amber-600"
-      >
-        🧪 테스트용 발언 추가
-      </button>
 
       <svg
         width={CANVAS_WIDTH}
