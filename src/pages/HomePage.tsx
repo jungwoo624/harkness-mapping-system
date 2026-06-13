@@ -1,5 +1,5 @@
 import { StudentCard } from '../components/StudentCard'
-import { mockSession } from '../data/mockSession'
+import mockSession from '../data/mockSession'
 import { computeParticipation, countSpeeches, formatDate } from '../utils/format'
 
 /** 임시 데이터로 토론 세션 참여 통계를 보여주는 시작 화면 */

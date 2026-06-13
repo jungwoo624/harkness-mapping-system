@@ -1,21 +1,26 @@
 import type { Session } from '../types'
 
-/** 개발/미리보기용 임시 토론 세션 데이터 */
-export const mockSession: Session = {
-  id: 'demo-1',
-  title: '정의란 무엇인가',
-  date: '2026-06-14T09:00:00.000Z',
+/**
+ * 테스트용 더미 토론 세션.
+ *
+ * 학생 6명을 중심 (250, 250), 반지름 200px 원 위에 60°씩 균등 배치한다.
+ * 좌표는 x = 250 + 200·cosθ, y = 250 + 200·sinθ 로 직접 계산한 값이며
+ * 12시 방향(-90°)에서 시작해 시계 방향으로 배치했다. (200·cos30° ≈ 173.21)
+ */
+const mockSession: Session = {
+  id: 'mock-session-1',
+  title: 'AI 시대의 직업 윤리',
+  date: '2026-06-14T00:00:00.000Z',
   durationMinutes: 45,
   students: [
-    { id: 's1', name: '민준', position: { x: 280, y: 40 } },
-    { id: 's2', name: '서연', position: { x: 480, y: 280 } },
-    { id: 's3', name: '도윤', position: { x: 280, y: 520 } },
-    { id: 's4', name: '하은', position: { x: 80, y: 280 } },
+    { id: 's1', name: '학생A', position: { x: 250, y: 50 } },
+    { id: 's2', name: '학생B', position: { x: 423.21, y: 150 } },
+    { id: 's3', name: '학생C', position: { x: 423.21, y: 350 } },
+    { id: 's4', name: '학생D', position: { x: 250, y: 450 } },
+    { id: 's5', name: '학생E', position: { x: 76.79, y: 350 } },
+    { id: 's6', name: '학생F', position: { x: 76.79, y: 150 } },
   ],
-  speechRecords: [
-    { id: 'r1', speakerId: 's1', targetId: 's2', timestamp: 1 },
-    { id: 'r2', speakerId: 's2', targetId: 's3', timestamp: 2 },
-    { id: 'r3', speakerId: 's4', targetId: 's1', timestamp: 3 },
-    { id: 'r4', speakerId: 's2', targetId: null, timestamp: 4 },
-  ],
+  speechRecords: [],
 }
+
+export default mockSession
