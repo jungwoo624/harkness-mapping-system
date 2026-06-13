@@ -1,9 +1,9 @@
-import { HomePage } from './pages/HomePage'
+import { SessionPage } from './pages/SessionPage'
 
 function App() {
   return (
     <div className="min-h-full bg-slate-50">
-      <HomePage />
+      <SessionPage />
     </div>
   )
 }
