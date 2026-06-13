@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { HarknessTable } from '../components/HarknessTable'
+import { SessionReport } from '../components/SessionReport'
 import type { Session, SpeechRecord, Student } from '../types'
 import { createStudents, durationInMinutes } from '../utils/session'
 import { getAllSessions, saveSession } from '../utils/sessionStorage'
@@ -25,6 +26,8 @@ export function SessionPage() {
   const [speechRecords, setSpeechRecords] = useState<SpeechRecord[]>([])
   const [startedAt, setStartedAt] = useState<number | null>(null)
   const [durationMinutes, setDurationMinutes] = useState(0)
+  // 종료된 세션(리포트 렌더용)
+  const [endedSession, setEndedSession] = useState<Session | null>(null)
   // 디버깅용 임시 표시: 저장된 세션 목록 JSON
   const [savedDump, setSavedDump] = useState<string | null>(null)
 
@@ -51,6 +54,7 @@ export function SessionPage() {
     }
     saveSession(session)
 
+    setEndedSession(session)
     setDurationMinutes(minutes)
     setPhase('ended')
   }
@@ -67,6 +71,7 @@ export function SessionPage() {
     setSpeechRecords([])
     setStartedAt(null)
     setDurationMinutes(0)
+    setEndedSession(null)
     setSavedDump(null)
   }
 
@@ -130,14 +135,17 @@ export function SessionPage() {
   // ── 종료 화면 ──────────────────────────────
   if (phase === 'ended') {
     return (
-      <main className="mx-auto max-w-md px-6 py-24 text-center" data-testid="end-screen">
+      <main className="mx-auto max-w-2xl px-6 py-16 text-center" data-testid="end-screen">
         <h1 className="text-2xl font-bold text-slate-900">세션이 종료되었습니다.</h1>
-        <p className="mt-4 text-slate-600">
+        <p className="mt-3 text-slate-600">
           진행시간: {durationMinutes}분, 총 발언 {speechRecords.length}건
         </p>
-        <p className="mt-2 text-sm text-slate-400">
-          (리포트 화면은 다음 단계에서 제공됩니다)
-        </p>
+
+        {endedSession && (
+          <div className="mt-8">
+            <SessionReport session={endedSession} />
+          </div>
+        )}
 
         <div className="mt-8 flex justify-center gap-3">
           {/* ⚠️ 임시(DEBUG): 저장된 세션 목록 확인용. 추후 제거 예정. */}
