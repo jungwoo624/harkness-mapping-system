@@ -4,16 +4,18 @@ import type { Session } from '../types'
 export const mockSession: Session = {
   id: 'demo-1',
   title: '정의란 무엇인가',
-  createdAt: '2026-06-14T09:00:00.000Z',
+  date: '2026-06-14T09:00:00.000Z',
+  durationMinutes: 45,
   students: [
-    { id: 's1', name: '민준', contributions: 3 },
-    { id: 's2', name: '서연', contributions: 5 },
-    { id: 's3', name: '도윤', contributions: 2 },
-    { id: 's4', name: '하은', contributions: 4 },
+    { id: 's1', name: '민준', position: { x: 280, y: 40 } },
+    { id: 's2', name: '서연', position: { x: 480, y: 280 } },
+    { id: 's3', name: '도윤', position: { x: 280, y: 520 } },
+    { id: 's4', name: '하은', position: { x: 80, y: 280 } },
   ],
-  links: [
-    { from: 's1', to: 's2', at: 1 },
-    { from: 's2', to: 's3', at: 2 },
-    { from: 's4', to: 's1', at: 3 },
+  speechRecords: [
+    { id: 'r1', speakerId: 's1', targetId: 's2', timestamp: 1 },
+    { id: 'r2', speakerId: 's2', targetId: 's3', timestamp: 2 },
+    { id: 'r3', speakerId: 's4', targetId: 's1', timestamp: 3 },
+    { id: 'r4', speakerId: 's2', targetId: null, timestamp: 4 },
   ],
 }

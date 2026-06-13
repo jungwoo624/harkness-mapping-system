@@ -1,9 +1,11 @@
 import { StudentCard } from '../components/StudentCard'
 import { mockSession } from '../data/mockSession'
-import { countSpeeches, formatDate } from '../utils/format'
+import { computeParticipation, countSpeeches, formatDate } from '../utils/format'
 
-/** 임시 데이터로 토론 세션을 보여주는 시작 화면 */
+/** 임시 데이터로 토론 세션 참여 통계를 보여주는 시작 화면 */
 export function HomePage() {
+  const stats = computeParticipation(mockSession)
+
   return (
     <main className="mx-auto max-w-2xl px-6 py-12">
       <header className="mb-8">
@@ -14,14 +16,14 @@ export function HomePage() {
           {mockSession.title}
         </h1>
         <p className="mt-2 text-slate-500">
-          {formatDate(mockSession.createdAt)} · 학생 {mockSession.students.length}명 · 총 발언{' '}
-          {countSpeeches(mockSession)}건
+          {formatDate(mockSession.date)} · {mockSession.durationMinutes}분 · 학생{' '}
+          {mockSession.students.length}명 · 총 발언 {countSpeeches(mockSession)}건
         </p>
       </header>
 
       <section className="space-y-3">
-        {mockSession.students.map((student) => (
-          <StudentCard key={student.id} student={student} />
+        {stats.map((stat) => (
+          <StudentCard key={stat.studentId} stat={stat} />
         ))}
       </section>
 
