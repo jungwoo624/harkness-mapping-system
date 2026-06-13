@@ -6,21 +6,109 @@ import {
 
 /** 한 명이 전체 발언의 이 비율 이상이면 '독점'으로 본다. */
 const MONOPOLY_THRESHOLD = 0.4
-/** 실제 API 응답을 흉내 내기 위한 임시 지연(ms). */
-const FAKE_LATENCY_MS = 500
+
+const ANTHROPIC_ENDPOINT = 'https://api.anthropic.com/v1/messages'
+const MODEL = 'claude-sonnet-4-6'
+const MAX_TOKENS = 500
+const SYSTEM_PROMPT =
+  '당신은 청소년 하크니스 토론을 분석하는 교육 전문가입니다. ' +
+  '따뜻하지만 건설적인 피드백을 한국어로 3~4문장으로 제공하세요.'
+
+/** Claude API에 전달할 통계 페이로드를 구성한다. */
+function buildStatsPayload(session: Session) {
+  const overall = calculateOverallStats(session)
+  const participation = calculateParticipationStats(session).map((stat) => ({
+    name: stat.studentName,
+    totalSpeeches: stat.totalSpeeches,
+    connectionsCount: stat.connectionsCount,
+  }))
+
+  return {
+    title: session.title,
+    durationMinutes: session.durationMinutes,
+    studentCount: session.students.length,
+    ...overall,
+    participation,
+  }
+}
 
 /**
  * 토론 세션에 대한 AI 분석 코멘트(한국어)를 생성한다.
  *
- * ⚠️ 임시 구현: 현재는 실제 Claude API를 호출하지 않고 calculateStats의
- * 통계 결과를 바탕으로 규칙 기반(rule-based)으로 문자열을 만든다.
- * 다음 단계에서 이 함수 내부를 실제 Claude API 호출로 교체할 예정이며,
- * 시그니처(`(session) => Promise<string>`)는 그대로 유지한다.
+ * 실제 Claude API(messages 엔드포인트)를 브라우저에서 직접 호출한다.
+ * 키 누락·네트워크·CORS 등으로 실패하면 규칙 기반 코멘트로 fallback 한다.
  */
 export async function generateAIComment(session: Session): Promise<string> {
-  // 비동기 API 교체를 대비해 약간의 지연을 둔다(로딩 UI 확인 목적).
-  await new Promise((resolve) => setTimeout(resolve, FAKE_LATENCY_MS))
+  const stats = buildStatsPayload(session)
 
+  try {
+    const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
+    if (!apiKey || apiKey === '여기에_내_API_키_입력') {
+      throw new Error('VITE_ANTHROPIC_API_KEY가 설정되지 않았습니다.')
+    }
+
+    const response = await fetch(ANTHROPIC_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        // 브라우저에서 직접 호출 시 필요
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: MAX_TOKENS,
+        system: SYSTEM_PROMPT,
+        messages: [
+          {
+            role: 'user',
+            content:
+              '다음은 한 하크니스 토론 세션의 통계 데이터(JSON)입니다. ' +
+              '이를 바탕으로 피드백을 작성해 주세요.\n\n' +
+              JSON.stringify(stats, null, 2),
+          },
+        ],
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Claude API 오류: ${response.status} ${response.statusText}`)
+    }
+
+    const data: unknown = await response.json()
+    const text = extractText(data)
+    if (!text) {
+      throw new Error('Claude API 응답에서 텍스트를 찾지 못했습니다.')
+    }
+    return text
+  } catch (error) {
+    console.error('AI 코멘트 생성 실패 — 규칙 기반 코멘트로 대체합니다:', error)
+    return buildRuleBasedComment(session)
+  }
+}
+
+/** Anthropic 응답(JSON)에서 첫 텍스트 블록을 안전하게 추출한다. */
+function extractText(data: unknown): string | null {
+  if (
+    typeof data === 'object' &&
+    data !== null &&
+    'content' in data &&
+    Array.isArray((data as { content: unknown }).content)
+  ) {
+    const blocks = (data as { content: Array<{ type?: string; text?: string }> })
+      .content
+    const textBlock = blocks.find((block) => block.type === 'text' && block.text)
+    if (textBlock?.text) return textBlock.text.trim()
+  }
+  return null
+}
+
+/**
+ * 규칙 기반 fallback 코멘트.
+ * API 호출이 불가능할 때 통계만으로 한국어 코멘트를 구성한다.
+ */
+export function buildRuleBasedComment(session: Session): string {
   const overall = calculateOverallStats(session)
   const stats = calculateParticipationStats(session)
   const studentCount = session.students.length
@@ -28,10 +116,10 @@ export async function generateAIComment(session: Session): Promise<string> {
 
   const lines: string[] = []
 
-  // 1) 전체 토론 분위기 한 줄 평가 (발언 횟수 + 연결 다양성 기준)
+  // 1) 전체 분위기 한 줄 평 (발언 횟수 + 연결 다양성)
   lines.push(buildMoodComment(total, studentCount, stats))
 
-  // 2) 소외된 학생 언급 + 제안
+  // 2) 소외 학생 언급 + 제안
   if (overall.isolatedStudents.length > 0) {
     const names = overall.isolatedStudents.join(', ')
     lines.push(
@@ -40,7 +128,7 @@ export async function generateAIComment(session: Session): Promise<string> {
     )
   }
 
-  // 3) 발언을 독점한 학생 언급 (전체 발언의 40% 이상)
+  // 3) 독점 학생 언급 (전체 발언의 40% 이상)
   if (total > 0) {
     const dominant = stats.find(
       (stat) => stat.totalSpeeches / total >= MONOPOLY_THRESHOLD,
@@ -72,7 +160,6 @@ function buildMoodComment(
     stats.length > 0
       ? stats.reduce((sum, stat) => sum + stat.connectionsCount, 0) / stats.length
       : 0
-  // 한 학생이 연결될 수 있는 최대 상대 수 대비 평균 연결 비율(0~1)
   const diversityRatio =
     studentCount > 1 ? avgConnections / (studentCount - 1) : 0
 
