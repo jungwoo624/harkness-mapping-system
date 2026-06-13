@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { HarknessTable } from '../components/HarknessTable'
-import type { SpeechRecord, Student } from '../types'
+import type { Session, SpeechRecord, Student } from '../types'
 import { createStudents, durationInMinutes } from '../utils/session'
+import { getAllSessions, saveSession } from '../utils/sessionStorage'
 
 type Phase = 'setup' | 'active' | 'ended'
 
@@ -24,6 +25,8 @@ export function SessionPage() {
   const [speechRecords, setSpeechRecords] = useState<SpeechRecord[]>([])
   const [startedAt, setStartedAt] = useState<number | null>(null)
   const [durationMinutes, setDurationMinutes] = useState(0)
+  // 디버깅용 임시 표시: 저장된 세션 목록 JSON
+  const [savedDump, setSavedDump] = useState<string | null>(null)
 
   const startSession = (): void => {
     setStudents(createStudents(studentCount))
@@ -34,12 +37,37 @@ export function SessionPage() {
 
   const endSession = (): void => {
     const endedAt = Date.now()
-    setDurationMinutes(durationInMinutes(startedAt ?? endedAt, endedAt))
+    const start = startedAt ?? endedAt
+    const minutes = durationInMinutes(start, endedAt)
+
+    // 종료 시점에 현재 세션을 저장소에 영속화
+    const session: Session = {
+      id: crypto.randomUUID(),
+      title: title || '제목 없는 토론',
+      date: new Date(start).toISOString(),
+      students,
+      speechRecords,
+      durationMinutes: minutes,
+    }
+    saveSession(session)
+
+    setDurationMinutes(minutes)
     setPhase('ended')
   }
 
   const addSpeech = (record: SpeechRecord): void => {
     setSpeechRecords((prev) => [...prev, record])
+  }
+
+  /** 종료 화면에서 새 세션을 시작하기 위해 설정 화면으로 돌아간다. */
+  const resetToSetup = (): void => {
+    setPhase('setup')
+    setTitle('')
+    setStudents([])
+    setSpeechRecords([])
+    setStartedAt(null)
+    setDurationMinutes(0)
+    setSavedDump(null)
   }
 
   // ── 설정 화면 ──────────────────────────────
@@ -110,6 +138,35 @@ export function SessionPage() {
         <p className="mt-2 text-sm text-slate-400">
           (리포트 화면은 다음 단계에서 제공됩니다)
         </p>
+
+        <div className="mt-8 flex justify-center gap-3">
+          {/* ⚠️ 임시(DEBUG): 저장된 세션 목록 확인용. 추후 제거 예정. */}
+          <button
+            type="button"
+            onClick={() => setSavedDump(JSON.stringify(getAllSessions(), null, 2))}
+            data-testid="view-saved"
+            className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-400"
+          >
+            저장된 세션 목록 보기
+          </button>
+          <button
+            type="button"
+            onClick={resetToSetup}
+            data-testid="new-session"
+            className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700"
+          >
+            새 세션 시작
+          </button>
+        </div>
+
+        {savedDump !== null && (
+          <pre
+            data-testid="session-dump"
+            className="mt-6 max-h-80 overflow-auto rounded-xl bg-slate-900 p-4 text-left text-xs text-slate-100"
+          >
+            {savedDump}
+          </pre>
+        )}
       </main>
     )
   }
