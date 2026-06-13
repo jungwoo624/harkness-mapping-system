@@ -1,6 +1,11 @@
 node_modules
 dist
 dist-ssr
+
+# 환경 변수
+.env
+.env.*
+!.env.example
 *.local
 .DS_Store
 .vscode/*
