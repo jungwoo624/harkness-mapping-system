@@ -1,5 +1,4 @@
-// 종료 화면 참여 리포트 검증
-// 시나리오(5명): s1→s2, s1→s3, s2→s1  → 발언수 s1=2,s2=1, 나머지 0 / s4·s5 고립
+// 종료 화면 리포트: 막대 그래프 + 색상 요약(소외/전원참여) 검증
 import { chromium } from 'playwright'
 
 const URL = 'http://localhost:5173/'
@@ -15,42 +14,65 @@ const page = await browser.newPage()
 await page.goto(URL, { waitUntil: 'networkidle' })
 await page.evaluate(() => localStorage.removeItem('harkness_sessions'))
 
-// 세션 시작 (5명)
-await page.getByTestId('topic-input').fill('리포트 검증')
-await page.getByTestId('count-select').selectOption('5')
-await page.getByTestId('start-session').click()
-
-// 발언: s1→s2, s1→s3, s2→s1
 const speak = async (a, b) => {
   await page.getByTestId(`seat-${a}`).click()
   await page.getByTestId(`seat-${b}`).click()
 }
+const barWidth = async (id) => {
+  const box = await page.getByTestId(`bar-fill-${id}`).boundingBox()
+  return box ? box.width : 0
+}
+
+// ── 시나리오 A: 소외 학생 존재 (5명: s1→s2, s1→s3, s2→s1) ──
+await page.getByTestId('topic-input').fill('소외 케이스')
+await page.getByTestId('count-select').selectOption('5')
+await page.getByTestId('start-session').click()
 await speak('s1', 's2')
 await speak('s1', 's3')
 await speak('s2', 's1')
-
 await page.getByTestId('end-session').click()
 
-// 리포트 존재
-check('리포트 영역 표시', await page.getByTestId('session-report').isVisible())
+check('A: 요약 카드 표시', await page.getByTestId('summary-card').isVisible())
+check('A: 가장 활발한 참여자 학생1', (await page.getByTestId('summary-most').innerText()) === '학생1')
+check('A: 가장 조용했던 참여자 학생3', (await page.getByTestId('summary-least').innerText()) === '학생3')
 
-// 요약 통계
-const text = (tid) => page.getByTestId(tid).innerText()
-check('총 발언 3건', (await text('stat-total')).includes('3건'))
-check('최다 발언 학생1', (await text('stat-most')).includes('학생1'))
-// 최소: 발언 0인 학생 다수(학생3,4,5) 중 먼저 등장한 학생3
-check('최소 발언 학생(0회 포함)', (await text('stat-least')).includes('학생3'))
-// 고립(연결 0): s4, s5 → 학생4, 학생5
-const isolated = await text('stat-isolated')
-check('고립 학생 4·5', isolated.includes('학생4') && isolated.includes('학생5'), isolated)
-check('고립에 연결된 학생 미포함', !isolated.includes('학생1') && !isolated.includes('학생2'))
+const isolatedVisible = await page.getByTestId('summary-isolated').isVisible()
+check('A: 소외 학생 메시지 표시', isolatedVisible)
+const isoText = await page.getByTestId('summary-isolated').innerText()
+check('A: 소외 학생 4·5 포함', isoText.includes('학생4') && isoText.includes('학생5'), isoText)
+const isoColor = await page
+  .getByTestId('summary-isolated')
+  .evaluate((el) => getComputedStyle(el).color)
+check('A: 소외 메시지 주의색(주황 계열)', /rgb\(194, 65, 12\)|rgb\(154, 52, 18\)/.test(isoColor), isoColor)
 
-// 학생별 발언 수
-const speeches = async (id) => Number(await page.getByTestId(`report-speeches-${id}`).innerText())
-check('s1 발언 2', (await speeches('s1')) === 2)
-check('s2 발언 1', (await speeches('s2')) === 1)
-check('s3 발언 0', (await speeches('s3')) === 0)
-check('s4 발언 0', (await speeches('s4')) === 0)
+// 막대: s1(2회) > s2(1회) > 0, s3/s4/s5 = 0
+const w1 = await barWidth('s1')
+const w2 = await barWidth('s2')
+const w3 = await barWidth('s3')
+check('A: 막대 s1 > s2 > 0', w1 > w2 && w2 > 0, `s1=${w1.toFixed(0)} s2=${w2.toFixed(0)}`)
+check('A: 막대 s3 = 0(발언 0회)', w3 < 2, `s3=${w3.toFixed(1)}`)
+
+// ── 시나리오 B: 전원 참여 (3명: s1→s2, s2→s3, s3→s1) ──
+await page.getByTestId('new-session').click()
+await page.getByTestId('topic-input').fill('전원 참여 케이스')
+await page.getByTestId('count-select').selectOption('3')
+await page.getByTestId('start-session').click()
+await speak('s1', 's2')
+await speak('s2', 's3')
+await speak('s3', 's1')
+await page.getByTestId('end-session').click()
+
+check('B: 소외 메시지 없음', !(await page.getByTestId('summary-isolated').isVisible().catch(() => false)))
+const allVisible = await page.getByTestId('summary-all-participated').isVisible()
+check('B: 전원 참여 메시지 표시', allVisible)
+check(
+  'B: 전원 참여 문구',
+  (await page.getByTestId('summary-all-participated').innerText()).includes('모든 학생이 대화에 참여했습니다'),
+)
+const okColor = await page
+  .getByTestId('summary-all-participated')
+  .evaluate((el) => getComputedStyle(el).color)
+check('B: 긍정색(초록 계열)', /rgb\(4, 120, 87\)|rgb\(6, 95, 70\)/.test(okColor), okColor)
 
 await browser.close()
 const failed = results.filter((r) => !r.ok)
