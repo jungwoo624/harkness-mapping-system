@@ -1,8 +1,10 @@
+import { useEffect, useState } from 'react';
 import HarknessTable from '../components/HarknessTable';
 import {
   calculateParticipationStats,
   calculateOverallStats,
 } from '../utils/calculateStats';
+import { generateAIComment } from '../utils/generateAIComment';
 import type { Session } from '../types';
 
 interface ReportPageProps {
@@ -28,6 +30,20 @@ export default function ReportPage({ session }: ReportPageProps) {
 
   // 막대 길이 비율 계산용 최댓값 (0으로 나누는 것 방지)
   const maxSpeeches = Math.max(1, ...stats.map((s) => s.totalSpeeches));
+
+  // AI 분석 코멘트 (현재는 규칙 기반, 추후 실제 API로 교체)
+  const [aiComment, setAiComment] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setAiComment(null);
+    generateAIComment(session).then((comment) => {
+      if (!cancelled) setAiComment(comment);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [session]);
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6">
@@ -108,6 +124,18 @@ export default function ReportPage({ session }: ReportPageProps) {
             </p>
           )}
         </div>
+      </section>
+
+      {/* AI 분석 코멘트 */}
+      <section className="rounded-lg bg-surface p-5">
+        <h2 className="mb-3 text-lg font-semibold text-[#e8ecf4]">AI 분석 코멘트</h2>
+        {aiComment === null ? (
+          <p className="text-sm text-muted">분석 중입니다...</p>
+        ) : (
+          <div className="flex flex-col gap-2 whitespace-pre-line text-sm leading-relaxed text-[#e8ecf4]">
+            {aiComment}
+          </div>
+        )}
       </section>
     </div>
   );
