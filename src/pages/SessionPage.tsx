@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import HarknessTable from '../components/HarknessTable';
-import type { Student, SpeechRecord } from '../types';
+import { saveSession, getAllSessions } from '../utils/sessionStorage';
+import type { Student, SpeechRecord, Session } from '../types';
 
 /** 세션 진행 단계 */
 type Phase = 'setup' | 'active' | 'ended';
@@ -48,16 +49,33 @@ export default function SessionPage() {
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [endedAt, setEndedAt] = useState<number | null>(null);
 
+  // 디버깅용: 저장된 세션 목록 JSON (임시 표시)
+  const [debugSessions, setDebugSessions] = useState<string | null>(null);
+
   function handleStart(): void {
     setStudents(createStudents(studentCount));
     setSpeechRecords([]);
     setStartedAt(Date.now());
     setEndedAt(null);
+    setDebugSessions(null);
     setPhase('active');
   }
 
   function handleEnd(): void {
-    setEndedAt(Date.now());
+    const finishedAt = Date.now();
+    setEndedAt(finishedAt);
+
+    const startTime = startedAt ?? finishedAt;
+    const session: Session = {
+      id: `session-${startTime}`,
+      title: title || '제목 없는 토론',
+      date: new Date(startTime).toISOString(),
+      students,
+      speechRecords,
+      durationMinutes: Math.round((finishedAt - startTime) / 60000),
+    };
+    saveSession(session);
+
     setPhase('ended');
   }
 
@@ -128,13 +146,30 @@ export default function SessionPage() {
         <p className="text-base text-slate-600">
           진행시간: {durationMinutes}분, 총 발언 {speechRecords.length}건
         </p>
-        <button
-          type="button"
-          onClick={() => setPhase('setup')}
-          className="rounded bg-slate-700 px-4 py-2 text-sm text-white hover:bg-slate-600"
-        >
-          새 세션 시작
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setPhase('setup')}
+            className="rounded bg-slate-700 px-4 py-2 text-sm text-white hover:bg-slate-600"
+          >
+            새 세션 시작
+          </button>
+          {/* 디버깅용 임시 버튼 — 추후 제거 예정 */}
+          <button
+            type="button"
+            onClick={() => setDebugSessions(JSON.stringify(getAllSessions(), null, 2))}
+            className="rounded bg-slate-500 px-4 py-2 text-sm text-white hover:bg-slate-400"
+          >
+            저장된 세션 목록 보기
+          </button>
+        </div>
+
+        {/* 디버깅용 임시 출력 — 추후 제거 예정 */}
+        {debugSessions !== null && (
+          <pre className="mt-2 max-h-80 w-full max-w-xl overflow-auto rounded bg-slate-900 p-3 text-left text-xs text-green-300">
+            {debugSessions}
+          </pre>
+        )}
       </section>
     );
   }
