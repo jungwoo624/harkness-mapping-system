@@ -4,6 +4,10 @@ import type { Student, SpeechRecord } from '../types';
 interface HarknessTableProps {
   /** 원형 테이블 둘레에 배치할 학생 목록 */
   students: Student[];
+  /** 지금까지의 발언 기록 (상위에서 관리) */
+  speechRecords: SpeechRecord[];
+  /** 발언자→대상 발언이 기록될 때 호출 */
+  onAddSpeech: (speakerId: string, targetId: string) => void;
 }
 
 /** SVG 캔버스 크기 (정사각형) */
@@ -85,9 +89,12 @@ function curveOffset(pairIndex: number): number {
  * 클릭으로 발언자→대상 흐름을 화살표로 기록한다.
  * 발언 횟수가 많을수록 좌석이 커지고 색이 진해진다.
  */
-export default function HarknessTable({ students }: HarknessTableProps) {
+export default function HarknessTable({
+  students,
+  speechRecords,
+  onAddSpeech,
+}: HarknessTableProps) {
   const [selectedSpeakerId, setSelectedSpeakerId] = useState<string | null>(null);
-  const [speechRecords, setSpeechRecords] = useState<SpeechRecord[]>([]);
 
   const studentById = new Map(students.map((s) => [s.id, s]));
   const selectedStudent = selectedSpeakerId ? studentById.get(selectedSpeakerId) : undefined;
@@ -111,23 +118,10 @@ export default function HarknessTable({ students }: HarknessTableProps) {
       setSelectedSpeakerId(null);
       return;
     }
-    // 다른 학생 클릭 → 발언 기록 생성 후 선택 초기화
-    setSpeechRecords((prev) => [...prev, createRecord(selectedSpeakerId, studentId)]);
+    // 다른 학생 클릭 → 발언 기록 추가 후 선택 초기화
+    onAddSpeech(selectedSpeakerId, studentId);
     setSelectedSpeakerId(null);
   }
-
-  // ── 임시 테스트 버튼용 핸들러 (다음 단계에서 제거 예정) ──────────────
-  function handleAddRandomSpeech(): void {
-    if (students.length < 2) return;
-    const speakerIndex = Math.floor(Math.random() * students.length);
-    let targetIndex = Math.floor(Math.random() * students.length);
-    while (targetIndex === speakerIndex) {
-      targetIndex = Math.floor(Math.random() * students.length);
-    }
-    const record = createRecord(students[speakerIndex].id, students[targetIndex].id);
-    setSpeechRecords((prev) => [...prev, record]);
-  }
-  // ────────────────────────────────────────────────────────────────────
 
   return (
     <div className="flex flex-col items-center gap-2">
@@ -249,25 +243,6 @@ export default function HarknessTable({ students }: HarknessTableProps) {
       </svg>
 
       <p className="text-sm text-slate-500">총 발언 기록: {speechRecords.length}건</p>
-
-      {/* 임시 테스트 버튼 — 다음 단계에서 제거 예정 */}
-      <button
-        type="button"
-        onClick={handleAddRandomSpeech}
-        className="rounded bg-slate-700 px-3 py-1.5 text-sm text-white hover:bg-slate-600"
-      >
-        테스트용 발언 추가
-      </button>
     </div>
   );
-}
-
-/** 발언 기록 한 건을 생성한다. */
-function createRecord(speakerId: string, targetId: string): SpeechRecord {
-  return {
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-    speakerId,
-    targetId,
-    timestamp: Date.now(),
-  };
 }
