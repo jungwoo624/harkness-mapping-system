@@ -6,8 +6,10 @@ interface HarknessTableProps {
   students: Student[];
   /** 지금까지의 발언 기록 (상위에서 관리) */
   speechRecords: SpeechRecord[];
-  /** 발언자→대상 발언이 기록될 때 호출 */
-  onAddSpeech: (speakerId: string, targetId: string) => void;
+  /** 발언자→대상 발언이 기록될 때 호출 (읽기 전용이면 생략 가능) */
+  onAddSpeech?: (speakerId: string, targetId: string) => void;
+  /** true면 클릭/선택이 비활성화되어 최종 상태만 보여준다 */
+  readOnly?: boolean;
 }
 
 /** SVG 캔버스 크기 (정사각형) */
@@ -37,8 +39,8 @@ const COLORS = {
   seatSelected: '#facc15',
   /** blue-300 — 발언 화살표 */
   arrow: '#93c5fd',
-  /** slate-700 — 기본 이름 텍스트 */
-  label: '#334155',
+  /** slate-300 — 다크 배경에서 읽히는 기본 이름 텍스트 */
+  label: '#cbd5e1',
   /** 진한 좌석 위 이름 텍스트 */
   labelOnDark: '#ffffff',
 } as const;
@@ -93,6 +95,7 @@ export default function HarknessTable({
   students,
   speechRecords,
   onAddSpeech,
+  readOnly = false,
 }: HarknessTableProps) {
   const [selectedSpeakerId, setSelectedSpeakerId] = useState<string | null>(null);
 
@@ -108,6 +111,8 @@ export default function HarknessTable({
     : '발언자를 클릭하세요.';
 
   function handleSeatClick(studentId: string): void {
+    // 읽기 전용이면 어떤 클릭도 무시
+    if (readOnly) return;
     // 아직 발언자가 없으면 → 발언자로 선택
     if (selectedSpeakerId === null) {
       setSelectedSpeakerId(studentId);
@@ -119,13 +124,13 @@ export default function HarknessTable({
       return;
     }
     // 다른 학생 클릭 → 발언 기록 추가 후 선택 초기화
-    onAddSpeech(selectedSpeakerId, studentId);
+    onAddSpeech?.(selectedSpeakerId, studentId);
     setSelectedSpeakerId(null);
   }
 
   return (
     <div className="flex flex-col items-center gap-2">
-      <p className="text-sm font-medium text-slate-600">{statusText}</p>
+      {!readOnly && <p className="text-sm font-medium text-muted">{statusText}</p>}
 
       <svg
         width={CANVAS_SIZE}
@@ -216,7 +221,7 @@ export default function HarknessTable({
             <g
               key={student.id}
               onClick={() => handleSeatClick(student.id)}
-              style={{ cursor: 'pointer' }}
+              style={{ cursor: readOnly ? 'default' : 'pointer' }}
             >
               <circle
                 cx={student.position.x}
@@ -242,7 +247,7 @@ export default function HarknessTable({
         })}
       </svg>
 
-      <p className="text-sm text-slate-500">총 발언 기록: {speechRecords.length}건</p>
+      <p className="text-sm text-muted">총 발언 기록: {speechRecords.length}건</p>
     </div>
   );
 }

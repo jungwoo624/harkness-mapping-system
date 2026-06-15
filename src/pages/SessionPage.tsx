@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import HarknessTable from '../components/HarknessTable';
-import { saveSession, getAllSessions } from '../utils/sessionStorage';
+import ReportPage from './ReportPage';
+import { saveSession } from '../utils/sessionStorage';
 import type { Student, SpeechRecord, Session } from '../types';
 
 /** 세션 진행 단계 */
-type Phase = 'setup' | 'active' | 'ended';
+type Phase = 'setup' | 'active' | 'report';
 
 /** 좌석 원형 배치 중심 좌표 */
 const CENTER = { x: 250, y: 250 };
@@ -47,24 +48,20 @@ export default function SessionPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [speechRecords, setSpeechRecords] = useState<SpeechRecord[]>([]);
   const [startedAt, setStartedAt] = useState<number | null>(null);
-  const [endedAt, setEndedAt] = useState<number | null>(null);
 
-  // 디버깅용: 저장된 세션 목록 JSON (임시 표시)
-  const [debugSessions, setDebugSessions] = useState<string | null>(null);
+  // 종료된 세션 (리포트 화면에 전달)
+  const [completedSession, setCompletedSession] = useState<Session | null>(null);
 
   function handleStart(): void {
     setStudents(createStudents(studentCount));
     setSpeechRecords([]);
     setStartedAt(Date.now());
-    setEndedAt(null);
-    setDebugSessions(null);
+    setCompletedSession(null);
     setPhase('active');
   }
 
   function handleEnd(): void {
     const finishedAt = Date.now();
-    setEndedAt(finishedAt);
-
     const startTime = startedAt ?? finishedAt;
     const session: Session = {
       id: `session-${startTime}`,
@@ -76,7 +73,8 @@ export default function SessionPage() {
     };
     saveSession(session);
 
-    setPhase('ended');
+    setCompletedSession(session);
+    setPhase('report');
   }
 
   function handleAddSpeech(speakerId: string, targetId: string): void {
@@ -93,25 +91,25 @@ export default function SessionPage() {
   if (phase === 'setup') {
     return (
       <section className="mx-auto flex max-w-md flex-col gap-4">
-        <h1 className="text-2xl font-bold text-slate-800">새 토론 세션</h1>
+        <h1 className="text-2xl font-bold text-[#e8ecf4]">새 토론 세션</h1>
 
-        <label className="flex flex-col gap-1 text-sm text-slate-600">
+        <label className="flex flex-col gap-1 text-sm text-muted">
           토론 주제
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="토론 주제를 입력하세요"
-            className="rounded border border-slate-300 px-3 py-2 text-base text-slate-800"
+            className="rounded border border-surface-2 bg-surface px-3 py-2 text-base text-[#e8ecf4] placeholder:text-muted"
           />
         </label>
 
-        <label className="flex flex-col gap-1 text-sm text-slate-600">
+        <label className="flex flex-col gap-1 text-sm text-muted">
           참여 학생 수
           <select
             value={studentCount}
             onChange={(e) => setStudentCount(Number(e.target.value))}
-            className="rounded border border-slate-300 px-3 py-2 text-base text-slate-800"
+            className="rounded border border-surface-2 bg-surface px-3 py-2 text-base text-[#e8ecf4]"
           >
             {Array.from(
               { length: MAX_STUDENTS - MIN_STUDENTS + 1 },
@@ -135,54 +133,31 @@ export default function SessionPage() {
     );
   }
 
-  // ── 세션 종료 화면 (리포트는 다음 단계 예정) ──────────────────────
-  if (phase === 'ended') {
-    const durationMinutes =
-      startedAt && endedAt ? Math.round((endedAt - startedAt) / 60000) : 0;
-
+  // ── 세션 종료 후 리포트 화면 ──────────────────────────────────────
+  if (phase === 'report' && completedSession) {
     return (
-      <section className="flex flex-col items-center gap-3 text-center">
-        <h1 className="text-2xl font-bold text-slate-800">세션이 종료되었습니다.</h1>
-        <p className="text-base text-slate-600">
-          진행시간: {durationMinutes}분, 총 발언 {speechRecords.length}건
-        </p>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => setPhase('setup')}
-            className="rounded bg-slate-700 px-4 py-2 text-sm text-white hover:bg-slate-600"
-          >
-            새 세션 시작
-          </button>
-          {/* 디버깅용 임시 버튼 — 추후 제거 예정 */}
-          <button
-            type="button"
-            onClick={() => setDebugSessions(JSON.stringify(getAllSessions(), null, 2))}
-            className="rounded bg-slate-500 px-4 py-2 text-sm text-white hover:bg-slate-400"
-          >
-            저장된 세션 목록 보기
-          </button>
-        </div>
-
-        {/* 디버깅용 임시 출력 — 추후 제거 예정 */}
-        {debugSessions !== null && (
-          <pre className="mt-2 max-h-80 w-full max-w-xl overflow-auto rounded bg-slate-900 p-3 text-left text-xs text-green-300">
-            {debugSessions}
-          </pre>
-        )}
-      </section>
+      <div className="flex flex-col items-center gap-4">
+        <ReportPage session={completedSession} />
+        <button
+          type="button"
+          onClick={() => setPhase('setup')}
+          className="rounded bg-surface-2 px-4 py-2 text-sm text-[#e8ecf4] hover:bg-surface"
+        >
+          새 세션 시작
+        </button>
+      </div>
     );
   }
 
   // ── 세션 진행 화면 ────────────────────────────────────────────────
   return (
     <section className="flex flex-col items-center gap-4">
-      <header className="flex w-full max-w-xl items-center justify-between">
+      <header className="flex w-full max-w-xl items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">
+          <h1 className="text-2xl font-bold text-[#e8ecf4]">
             {title || '제목 없는 토론'}
           </h1>
-          <p className="text-sm text-slate-500">참가 학생 {students.length}명</p>
+          <p className="text-sm text-muted">참가 학생 {students.length}명</p>
         </div>
         <button
           type="button"
