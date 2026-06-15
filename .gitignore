@@ -17,6 +17,10 @@ dist-ssr
 .env.*
 !.env.example
 
+# 백엔드 서버 (server/)
+server/.env
+server/uploads/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

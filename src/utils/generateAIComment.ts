@@ -7,12 +7,9 @@ import {
 /** 한 명이 전체 발언의 이 비율 이상이면 '독점'으로 본다. */
 const MONOPOLY_THRESHOLD = 0.4
 
-const ANTHROPIC_ENDPOINT = 'https://api.anthropic.com/v1/messages'
-const MODEL = 'claude-sonnet-4-6'
-const MAX_TOKENS = 500
-const SYSTEM_PROMPT =
-  '당신은 청소년 하크니스 토론을 분석하는 교육 전문가입니다. ' +
-  '따뜻하지만 건설적인 피드백을 한국어로 3~4문장으로 제공하세요.'
+/** 백엔드 서버 주소 (AI 키는 서버에만 보관) */
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3001'
+const ANALYSIS_ENDPOINT = `${API_BASE_URL}/api/analysis`
 
 /** Claude API에 전달할 통계 페이로드를 구성한다. */
 function buildStatsPayload(session: Session) {
@@ -35,71 +32,46 @@ function buildStatsPayload(session: Session) {
 /**
  * 토론 세션에 대한 AI 분석 코멘트(한국어)를 생성한다.
  *
- * 실제 Claude API(messages 엔드포인트)를 브라우저에서 직접 호출한다.
- * 키 누락·네트워크·CORS 등으로 실패하면 규칙 기반 코멘트로 fallback 한다.
+ * 백엔드 서버(/api/analysis)로 통계를 전달해 Claude 분석을 요청한다.
+ * (API 키는 서버에만 보관 — 브라우저에 노출되지 않는다.)
+ * 서버 부재·네트워크·오류 등으로 실패하면 규칙 기반 코멘트로 fallback 한다.
  */
 export async function generateAIComment(session: Session): Promise<string> {
   const stats = buildStatsPayload(session)
 
   try {
-    const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
-    if (!apiKey || apiKey === '여기에_내_API_키_입력') {
-      throw new Error('VITE_ANTHROPIC_API_KEY가 설정되지 않았습니다.')
-    }
-
-    const response = await fetch(ANTHROPIC_ENDPOINT, {
+    const response = await fetch(ANALYSIS_ENDPOINT, {
       method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        // 브라우저에서 직접 호출 시 필요
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: MAX_TOKENS,
-        system: SYSTEM_PROMPT,
-        messages: [
-          {
-            role: 'user',
-            content:
-              '다음은 한 하크니스 토론 세션의 통계 데이터(JSON)입니다. ' +
-              '이를 바탕으로 피드백을 작성해 주세요.\n\n' +
-              JSON.stringify(stats, null, 2),
-          },
-        ],
-      }),
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ stats }),
     })
 
     if (!response.ok) {
-      throw new Error(`Claude API 오류: ${response.status} ${response.statusText}`)
+      throw new Error(`분석 서버 오류: ${response.status} ${response.statusText}`)
     }
 
     const data: unknown = await response.json()
-    const text = extractText(data)
-    if (!text) {
-      throw new Error('Claude API 응답에서 텍스트를 찾지 못했습니다.')
+    const comment = extractComment(data)
+    if (!comment) {
+      throw new Error('분석 서버 응답에서 코멘트를 찾지 못했습니다.')
     }
-    return text
+    return comment
   } catch (error) {
     console.error('AI 코멘트 생성 실패 — 규칙 기반 코멘트로 대체합니다:', error)
     return buildRuleBasedComment(session)
   }
 }
 
-/** Anthropic 응답(JSON)에서 첫 텍스트 블록을 안전하게 추출한다. */
-function extractText(data: unknown): string | null {
+/** 백엔드 응답(JSON)에서 comment 문자열을 안전하게 추출한다. */
+function extractComment(data: unknown): string | null {
   if (
     typeof data === 'object' &&
     data !== null &&
-    'content' in data &&
-    Array.isArray((data as { content: unknown }).content)
+    'comment' in data &&
+    typeof (data as { comment: unknown }).comment === 'string'
   ) {
-    const blocks = (data as { content: Array<{ type?: string; text?: string }> })
-      .content
-    const textBlock = blocks.find((block) => block.type === 'text' && block.text)
-    if (textBlock?.text) return textBlock.text.trim()
+    const comment = (data as { comment: string }).comment.trim()
+    return comment.length > 0 ? comment : null
   }
   return null
 }
