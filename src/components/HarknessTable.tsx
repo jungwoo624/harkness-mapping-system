@@ -12,8 +12,14 @@ const CANVAS_SIZE = 500;
 const CENTER = { x: 250, y: 250 };
 /** 원형 테이블 반지름 */
 const TABLE_RADIUS = 150;
-/** 학생 좌석 원 반지름 */
-const SEAT_RADIUS = 30;
+/** 학생 좌석 기본 반지름 */
+const BASE_SEAT_RADIUS = 30;
+/** 학생 좌석 최대 반지름 */
+const MAX_SEAT_RADIUS = 50;
+/** 발언 1회당 늘어나는 반지름(px) */
+const GROWTH_PER_SPEECH = 3;
+/** 이름 텍스트를 진하게 칠하는 발언 횟수 임계값 */
+const DARK_SEAT_THRESHOLD = 6;
 /** 같은 두 학생 사이 곡선을 벌리는 간격(px) */
 const CURVE_STEP = 25;
 
@@ -21,17 +27,43 @@ const CURVE_STEP = 25;
 const COLORS = {
   /** gray-300 — 테이블 테두리 */
   table: '#d1d5db',
-  /** blue-100 — 학생 원 채움 */
-  seatFill: '#dbeafe',
-  /** blue-400 — 학생 원 기본 테두리 */
+  /** 학생 원 기본 테두리 (blue-400) */
   seatStroke: '#60a5fa',
   /** yellow-400 — 선택된 발언자 강조 테두리 */
   seatSelected: '#facc15',
   /** blue-300 — 발언 화살표 */
   arrow: '#93c5fd',
-  /** slate-700 — 이름 텍스트 */
+  /** slate-700 — 기본 이름 텍스트 */
   label: '#334155',
+  /** 진한 좌석 위 이름 텍스트 */
+  labelOnDark: '#ffffff',
 } as const;
+
+/** 발언 횟수별 좌석 채움 색 단계 */
+const SEAT_FILL = {
+  none: '#e5e7eb', // 0회: 회색
+  low: '#bfdbfe', // 1-2회: 연한 파랑
+  mid: '#60a5fa', // 3-5회: 중간 파랑
+  high: '#2563eb', // 6회+: 진한 파랑
+} as const;
+
+/** 특정 학생이 발언자인 기록 수(총 발언 횟수)를 계산한다. */
+function getSpeechCount(records: SpeechRecord[], studentId: string): number {
+  return records.filter((record) => record.speakerId === studentId).length;
+}
+
+/** 발언 횟수에 따른 좌석 반지름 (기본 30, 1회당 +3, 최대 50). */
+function getSeatRadius(count: number): number {
+  return Math.min(BASE_SEAT_RADIUS + count * GROWTH_PER_SPEECH, MAX_SEAT_RADIUS);
+}
+
+/** 발언 횟수에 따른 좌석 채움 색. */
+function getSeatFill(count: number): string {
+  if (count === 0) return SEAT_FILL.none;
+  if (count <= 2) return SEAT_FILL.low;
+  if (count <= 5) return SEAT_FILL.mid;
+  return SEAT_FILL.high;
+}
 
 /** 두 학생을 방향과 무관하게 식별하는 키 */
 function undirectedKey(a: string, b: string): string {
@@ -51,6 +83,7 @@ function curveOffset(pairIndex: number): number {
 /**
  * 하크니스 토론용 원형 테이블. 학생을 좌석에 배치하고,
  * 클릭으로 발언자→대상 흐름을 화살표로 기록한다.
+ * 발언 횟수가 많을수록 좌석이 커지고 색이 진해진다.
  */
 export default function HarknessTable({ students }: HarknessTableProps) {
   const [selectedSpeakerId, setSelectedSpeakerId] = useState<string | null>(null);
@@ -58,6 +91,10 @@ export default function HarknessTable({ students }: HarknessTableProps) {
 
   const studentById = new Map(students.map((s) => [s.id, s]));
   const selectedStudent = selectedSpeakerId ? studentById.get(selectedSpeakerId) : undefined;
+
+  /** 좌석 반지름을 학생 id로 조회 (화살표가 원 가장자리에 닿도록 사용) */
+  const radiusOf = (studentId: string): number =>
+    getSeatRadius(getSpeechCount(speechRecords, studentId));
 
   const statusText = selectedStudent
     ? `${selectedStudent.name}님이 발언 중입니다. 대화 상대를 클릭하세요.`
@@ -75,15 +112,22 @@ export default function HarknessTable({ students }: HarknessTableProps) {
       return;
     }
     // 다른 학생 클릭 → 발언 기록 생성 후 선택 초기화
-    const record: SpeechRecord = {
-      id: Date.now().toString(),
-      speakerId: selectedSpeakerId,
-      targetId: studentId,
-      timestamp: Date.now(),
-    };
-    setSpeechRecords((prev) => [...prev, record]);
+    setSpeechRecords((prev) => [...prev, createRecord(selectedSpeakerId, studentId)]);
     setSelectedSpeakerId(null);
   }
+
+  // ── 임시 테스트 버튼용 핸들러 (다음 단계에서 제거 예정) ──────────────
+  function handleAddRandomSpeech(): void {
+    if (students.length < 2) return;
+    const speakerIndex = Math.floor(Math.random() * students.length);
+    let targetIndex = Math.floor(Math.random() * students.length);
+    while (targetIndex === speakerIndex) {
+      targetIndex = Math.floor(Math.random() * students.length);
+    }
+    const record = createRecord(students[speakerIndex].id, students[targetIndex].id);
+    setSpeechRecords((prev) => [...prev, record]);
+  }
+  // ────────────────────────────────────────────────────────────────────
 
   return (
     <div className="flex flex-col items-center gap-2">
@@ -138,11 +182,11 @@ export default function HarknessTable({ students }: HarknessTableProps) {
           const ux = dx / len;
           const uy = dy / len;
 
-          // 원 가장자리에서 시작/끝 (원 위를 침범하지 않도록)
-          const sx = speaker.position.x + ux * SEAT_RADIUS;
-          const sy = speaker.position.y + uy * SEAT_RADIUS;
-          const ex = target.position.x - ux * SEAT_RADIUS;
-          const ey = target.position.y - uy * SEAT_RADIUS;
+          // 각 원의 실제 반지름만큼 떨어진 가장자리에서 시작/끝
+          const sx = speaker.position.x + ux * radiusOf(speaker.id);
+          const sy = speaker.position.y + uy * radiusOf(speaker.id);
+          const ex = target.position.x - ux * radiusOf(target.id);
+          const ey = target.position.y - uy * radiusOf(target.id);
 
           // 수직 방향으로 제어점을 밀어 곡선 생성
           const mx = (sx + ex) / 2;
@@ -167,9 +211,13 @@ export default function HarknessTable({ students }: HarknessTableProps) {
           );
         })}
 
-        {/* 학생 좌석 */}
+        {/* 학생 좌석 (발언 횟수에 따라 크기·색 변화) */}
         {students.map((student) => {
+          const count = getSpeechCount(speechRecords, student.id);
+          const radius = getSeatRadius(count);
           const isSelected = student.id === selectedSpeakerId;
+          const isDark = count >= DARK_SEAT_THRESHOLD;
+
           return (
             <g
               key={student.id}
@@ -179,20 +227,21 @@ export default function HarknessTable({ students }: HarknessTableProps) {
               <circle
                 cx={student.position.x}
                 cy={student.position.y}
-                r={SEAT_RADIUS}
-                fill={COLORS.seatFill}
+                r={radius}
+                fill={getSeatFill(count)}
                 stroke={isSelected ? COLORS.seatSelected : COLORS.seatStroke}
                 strokeWidth={isSelected ? 3 : 2}
               />
+              {/* 원 반지름에 맞춰 아래쪽에 여백을 두고 이름 배치 */}
               <text
                 x={student.position.x}
-                y={student.position.y + SEAT_RADIUS + 16}
+                y={student.position.y + radius + 16}
                 textAnchor="middle"
                 fontSize={14}
-                fill={COLORS.label}
+                fill={isDark ? COLORS.labelOnDark : COLORS.label}
                 style={{ userSelect: 'none', pointerEvents: 'none' }}
               >
-                {student.name}
+                {student.name} ({count})
               </text>
             </g>
           );
@@ -200,6 +249,25 @@ export default function HarknessTable({ students }: HarknessTableProps) {
       </svg>
 
       <p className="text-sm text-slate-500">총 발언 기록: {speechRecords.length}건</p>
+
+      {/* 임시 테스트 버튼 — 다음 단계에서 제거 예정 */}
+      <button
+        type="button"
+        onClick={handleAddRandomSpeech}
+        className="rounded bg-slate-700 px-3 py-1.5 text-sm text-white hover:bg-slate-600"
+      >
+        테스트용 발언 추가
+      </button>
     </div>
   );
+}
+
+/** 발언 기록 한 건을 생성한다. */
+function createRecord(speakerId: string, targetId: string): SpeechRecord {
+  return {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    speakerId,
+    targetId,
+    timestamp: Date.now(),
+  };
 }
