@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { uploadVideo } from '../utils/uploadVideo'
+import { pollAnalysisStatus } from '../utils/pollAnalysis'
+import type { AnalysisResult, AnalysisStatus } from '../utils/pollAnalysis'
 
 const MIN_STUDENTS = 3
 const MAX_STUDENTS = 12
@@ -11,6 +13,37 @@ const STUDENT_OPTIONS = Array.from(
   { length: MAX_STUDENTS - MIN_STUDENTS + 1 },
   (_, i) => MIN_STUDENTS + i,
 )
+
+/** 진행 단계 정의 (표시 순서) */
+const STAGES = [
+  { key: 'upload', label: '파일 업로드 중...' },
+  { key: 'extracting', label: '음성 추출 중...' },
+  { key: 'transcribing', label: '발언 내용 인식 중...' },
+  { key: 'analyzing', label: 'AI 분석 중...' },
+  { key: 'completed', label: '완료!' },
+] as const
+
+/** 현재 stage 문자열을 STAGES 인덱스로 변환한다. */
+function stageToIndex(stage: string): number {
+  switch (stage) {
+    case 'uploading':
+      return 0
+    case 'pending':
+    case 'extracting':
+      return 1
+    case 'transcribing':
+      return 2
+    case 'analyzing':
+      return 3
+    case 'completed':
+      return 4
+    default:
+      return 0
+  }
+}
+
+/** 분석 화면 모드 */
+type AnalysisPhase = 'idle' | 'running' | 'done' | 'error'
 
 /** 바이트를 사람이 읽기 쉬운 용량 문자열로 변환한다. */
 function formatBytes(bytes: number): string {
@@ -27,7 +60,7 @@ function formatBytes(bytes: number): string {
 
 /**
  * 영상 분석 탭.
- * Step1(기본 정보) → Step2(영상 업로드) → Step3(분석 시작) 흐름을 제공한다.
+ * 입력(Step1~3) → 업로드/분석 진행 화면 → 완료/오류 흐름을 제공한다.
  */
 export function VideoUploadPage() {
   // Step 1
@@ -41,13 +74,18 @@ export function VideoUploadPage() {
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Step 3 / 공통
+  // Step 3 / 폼 진행
   const [step, setStep] = useState<1 | 2 | 3>(1)
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [jobId, setJobId] = useState<string | null>(null)
 
-  // 인원 수가 바뀌면 이름 입력 칸 개수를 맞춘다 (기존 입력은 보존)
+  // 분석 진행 상태
+  const [phase, setPhase] = useState<AnalysisPhase>('idle')
+  const [stage, setStage] = useState<string>('uploading')
+  const [progress, setProgress] = useState(0)
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [result, setResult] = useState<AnalysisResult | null>(null)
+
+  // 인원 수가 바뀌면 이름 입력 칸 개수를 맞춘다 (기존 입력 보존)
   useEffect(() => {
     setNames((prev) => {
       const next = prev.slice(0, studentCount)
@@ -69,9 +107,8 @@ export function VideoUploadPage() {
 
   const isStep1Done = title.trim().length > 0
   const isStep2Done = file !== null
-  const canAnalyze = isStep1Done && isStep2Done && !isAnalyzing
+  const canAnalyze = isStep1Done && isStep2Done
 
-  // 진행 단계 갱신
   useEffect(() => {
     if (isStep2Done) setStep(3)
     else if (isStep1Done) setStep(2)
@@ -94,7 +131,6 @@ export function VideoUploadPage() {
       return
     }
     setError(null)
-    setJobId(null)
     setFile(selected)
   }
 
@@ -106,21 +142,144 @@ export function VideoUploadPage() {
 
   const handleAnalyze = async (): Promise<void> => {
     if (!file) return
-    setIsAnalyzing(true)
+    setPhase('running')
     setError(null)
-    setJobId(null)
+    setResult(null)
+    setStage('uploading')
+    setProgress(5)
+    setMessage('파일을 업로드하고 있습니다...')
+
     try {
-      const id = await uploadVideo(file, { title, studentNames: names })
-      setJobId(id)
-      // 다음 단계(분석 폴링)에서 사용할 jobId
-      console.log('업로드 성공 — jobId:', id)
+      const jobId = await uploadVideo(file, { title, studentNames: names })
+
+      const finalResult = await pollAnalysisStatus(jobId, (status: AnalysisStatus) => {
+        setStage(status.status)
+        setProgress(status.progress)
+        setMessage(status.message)
+      })
+
+      setResult(finalResult)
+      setStage('completed')
+      setProgress(100)
+      setPhase('done')
     } catch (err) {
-      setError(err instanceof Error ? err.message : '업로드 중 오류가 발생했습니다.')
-    } finally {
-      setIsAnalyzing(false)
+      setError(err instanceof Error ? err.message : '분석 중 오류가 발생했습니다.')
+      setPhase('error')
     }
   }
 
+  const handleRetry = (): void => {
+    setPhase('idle')
+    setError(null)
+    setProgress(0)
+    setMessage('')
+    setStage('uploading')
+    setResult(null)
+  }
+
+  // ── 진행/완료/오류 화면 ───────────────────────────────────────────
+  if (phase !== 'idle') {
+    const activeIndex = stageToIndex(stage)
+
+    return (
+      <div className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-8">
+        <header>
+          <h1 className="text-2xl font-bold text-slate-800">{title || '토론 분석'}</h1>
+          <p className="mt-1 text-sm text-slate-500">영상을 분석하고 있습니다.</p>
+        </header>
+
+        <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          {/* 단계 목록 */}
+          <ul className="flex flex-col gap-3">
+            {STAGES.map((s, i) => {
+              const done = i < activeIndex || (phase === 'done' && i === 4)
+              const active = i === activeIndex && phase === 'running'
+              return (
+                <li key={s.key} className="flex items-center gap-3">
+                  <span
+                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                      done
+                        ? 'bg-emerald-500 text-white'
+                        : active
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-slate-200 text-slate-400'
+                    }`}
+                  >
+                    {done ? '✓' : i + 1}
+                  </span>
+                  <span
+                    className={`text-sm ${
+                      active
+                        ? 'font-semibold text-blue-600'
+                        : done
+                          ? 'text-slate-700'
+                          : 'text-slate-400'
+                    }`}
+                  >
+                    {s.label}
+                    {active && <span className="ml-1 animate-pulse">⏳</span>}
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+
+          {/* 진행 바 */}
+          <div className="mt-5 h-3 w-full overflow-hidden rounded-full bg-slate-100">
+            <div
+              style={{ width: `${progress}%` }}
+              className={`h-3 rounded-full transition-all duration-500 ${
+                phase === 'error' ? 'bg-rose-500' : 'bg-blue-500'
+              }`}
+            />
+          </div>
+          <p className="mt-2 text-right text-xs text-slate-400">{progress}%</p>
+
+          {/* 현재 단계 설명 */}
+          {phase === 'running' && (
+            <p className="mt-2 text-center text-sm text-slate-600">{message}</p>
+          )}
+
+          {/* 완료 */}
+          {phase === 'done' && (
+            <div className="mt-4 flex flex-col items-center gap-3">
+              <p className="text-center text-sm font-medium text-emerald-600">
+                분석이 완료되었습니다!
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  // 다음 단계에서 결과 화면으로 연결
+                  console.log('분석 결과:', result)
+                }}
+                className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500"
+              >
+                결과 보기
+              </button>
+            </div>
+          )}
+
+          {/* 오류 */}
+          {phase === 'error' && (
+            <div className="mt-4 flex flex-col items-center gap-3">
+              <p className="w-full rounded-lg bg-rose-50 px-3 py-2 text-center text-sm text-rose-600">
+                {error}
+              </p>
+              <button
+                type="button"
+                onClick={handleRetry}
+                className="rounded-lg bg-slate-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-600"
+              >
+                다시 시도
+              </button>
+            </div>
+          )}
+        </section>
+      </div>
+    )
+  }
+
+  // ── 입력 폼 화면 ──────────────────────────────────────────────────
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-8">
       <header>
@@ -258,7 +417,7 @@ export function VideoUploadPage() {
             disabled={!canAnalyze}
             className="w-full rounded-lg bg-indigo-600 px-4 py-3 text-base font-semibold text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
-            {isAnalyzing ? '업로드 중...' : 'AI 분석 시작'}
+            AI 분석 시작
           </button>
           <p className="text-xs text-slate-400">
             영상 길이에 따라 1~3분 소요됩니다. 분석 중 페이지를 닫지 마세요.
@@ -267,11 +426,6 @@ export function VideoUploadPage() {
           {error && (
             <p className="mt-2 w-full rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600">
               {error}
-            </p>
-          )}
-          {jobId && (
-            <p className="mt-2 w-full rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-              업로드가 완료되었습니다. (jobId: {jobId})
             </p>
           )}
         </div>
