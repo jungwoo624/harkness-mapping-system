@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { uploadVideo } from '../utils/uploadVideo'
 
 const MIN_STUDENTS = 3
 const MAX_STUDENTS = 12
@@ -10,9 +11,6 @@ const STUDENT_OPTIONS = Array.from(
   { length: MAX_STUDENTS - MIN_STUDENTS + 1 },
   (_, i) => MIN_STUDENTS + i,
 )
-
-/** 백엔드 주소 (영상 업로드/분석) */
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3001'
 
 /** 바이트를 사람이 읽기 쉬운 용량 문자열로 변환한다. */
 function formatBytes(bytes: number): string {
@@ -47,7 +45,7 @@ export function VideoUploadPage() {
   const [step, setStep] = useState<1 | 2 | 3>(1)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [result, setResult] = useState<string | null>(null)
+  const [jobId, setJobId] = useState<string | null>(null)
 
   // 인원 수가 바뀌면 이름 입력 칸 개수를 맞춘다 (기존 입력은 보존)
   useEffect(() => {
@@ -96,7 +94,7 @@ export function VideoUploadPage() {
       return
     }
     setError(null)
-    setResult(null)
+    setJobId(null)
     setFile(selected)
   }
 
@@ -110,33 +108,14 @@ export function VideoUploadPage() {
     if (!file) return
     setIsAnalyzing(true)
     setError(null)
-    setResult(null)
+    setJobId(null)
     try {
-      const form = new FormData()
-      form.append('video', file)
-      form.append('title', title)
-      form.append('names', JSON.stringify(names))
-
-      const res = await fetch(`${API_BASE_URL}/api/upload`, {
-        method: 'POST',
-        body: form,
-      })
-      if (!res.ok) {
-        const body: unknown = await res.json().catch(() => ({}))
-        const detail =
-          typeof body === 'object' && body !== null && 'detail' in body
-            ? String((body as { detail: unknown }).detail)
-            : `서버 오류 (${res.status})`
-        throw new Error(detail)
-      }
-      const data: { transcript?: string } = await res.json()
-      setResult(data.transcript?.trim() || '(전사 결과가 비어 있습니다)')
+      const id = await uploadVideo(file, { title, studentNames: names })
+      setJobId(id)
+      // 다음 단계(분석 폴링)에서 사용할 jobId
+      console.log('업로드 성공 — jobId:', id)
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? `분석에 실패했습니다: ${err.message}`
-          : '분석 중 오류가 발생했습니다.',
-      )
+      setError(err instanceof Error ? err.message : '업로드 중 오류가 발생했습니다.')
     } finally {
       setIsAnalyzing(false)
     }
@@ -279,7 +258,7 @@ export function VideoUploadPage() {
             disabled={!canAnalyze}
             className="w-full rounded-lg bg-indigo-600 px-4 py-3 text-base font-semibold text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
-            {isAnalyzing ? '분석 중입니다…' : 'AI 분석 시작'}
+            {isAnalyzing ? '업로드 중...' : 'AI 분석 시작'}
           </button>
           <p className="text-xs text-slate-400">
             영상 길이에 따라 1~3분 소요됩니다. 분석 중 페이지를 닫지 마세요.
@@ -290,11 +269,10 @@ export function VideoUploadPage() {
               {error}
             </p>
           )}
-          {result && (
-            <div className="mt-2 w-full rounded-lg bg-emerald-50 px-3 py-2 text-left text-sm text-emerald-800">
-              <p className="mb-1 font-semibold">전사 결과</p>
-              <p className="whitespace-pre-line">{result}</p>
-            </div>
+          {jobId && (
+            <p className="mt-2 w-full rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+              업로드가 완료되었습니다. (jobId: {jobId})
+            </p>
           )}
         </div>
       </section>
