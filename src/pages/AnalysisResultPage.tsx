@@ -44,11 +44,11 @@ function msToClock(ms: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
-/** 초 → "m분 s초" */
+/** 초 → "분:초" (예: 132 → "2:12") */
 function secondsToText(sec: number): string {
   const m = Math.floor(sec / 60)
   const s = sec % 60
-  return m > 0 ? `${m}분 ${s}초` : `${s}초`
+  return `${m}:${s.toString().padStart(2, '0')}`
 }
 
 /** 학생 이름 배열로 원형 배치된 Student[] 생성 */
