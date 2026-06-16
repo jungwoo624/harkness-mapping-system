@@ -51,15 +51,27 @@ function secondsToText(sec: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
-/** 학생 이름 배열로 원형 배치된 Student[] 생성 */
-function buildStudents(studentNames: string[]): Student[] {
-  const base = createStudents(studentNames.length)
-  return base.map((s, i) => ({ ...s, name: studentNames[i] || s.name }))
+/**
+ * 네트워크 노드 이름 목록을 구성한다.
+ * 실제 발언한 화자(utterances) + 명단(studentNames)을 합쳐 누락이 없도록 한다.
+ * (명단을 앞에 두어 좌석 순서를 유지하고, 발언만 한 화자도 노드로 포함)
+ */
+function buildNodeNames(utterances: Utterance[], studentNames: string[]): string[] {
+  const roster = studentNames.filter((n) => n && n.trim())
+  const spoke = utterances.map((u) => u.speaker)
+  return [...new Set([...roster, ...spoke])]
+}
+
+/** 이름 목록으로 원형 배치된 Student[] 생성 (name을 id로도 사용) */
+function buildStudents(nodeNames: string[]): Student[] {
+  const base = createStudents(nodeNames.length)
+  return base.map((s, i) => ({ ...s, id: `n${i}`, name: nodeNames[i] }))
 }
 
 /**
  * 연속된 utterances에서 화자가 바뀔 때마다
  * 이전 화자 → 다음 화자로 SpeechRecord를 생성한다.
+ * (화자 문자열을 노드 id에 직접 매핑하므로 이름 미입력/라벨 불일치에도 동작)
  */
 function buildSpeechRecords(utterances: Utterance[], students: Student[]): SpeechRecord[] {
   const idByName = new Map(students.map((s) => [s.name, s.id]))
@@ -92,22 +104,33 @@ export function AnalysisResultPage({
   const { utterances, studentNames, individualReports, discussionFlowAnalysis } =
     analysisResult
 
-  const students = useMemo(() => buildStudents(studentNames), [studentNames])
+  const nodeNames = useMemo(
+    () => buildNodeNames(utterances, studentNames),
+    [utterances, studentNames],
+  )
+  const students = useMemo(() => buildStudents(nodeNames), [nodeNames])
   const speechRecords = useMemo(
     () => buildSpeechRecords(utterances, students),
     [utterances, students],
   )
 
-  // 화자별 색상 매핑
+  // 화자별 색상 매핑 (실제 등장 화자 기준)
   const colorBySpeaker = useMemo(() => {
     const map = new Map<string, string>()
-    studentNames.forEach((name, i) => {
+    nodeNames.forEach((name, i) => {
       map.set(name, SPEAKER_COLORS[i % SPEAKER_COLORS.length])
     })
     return map
-  }, [studentNames])
+  }, [nodeNames])
 
-  const isolated = discussionFlowAnalysis.isolatedStudents
+  // 소외 학생: Claude 결과가 있으면 우선, 없으면 전사에서 직접 도출(명단 중 미발언)
+  const spokeSet = useMemo(() => new Set(utterances.map((u) => u.speaker)), [utterances])
+  const isolated = useMemo(() => {
+    if (discussionFlowAnalysis.isolatedStudents.length > 0) {
+      return discussionFlowAnalysis.isolatedStudents
+    }
+    return studentNames.filter((n) => n && n.trim() && !spokeSet.has(n))
+  }, [discussionFlowAnalysis.isolatedStudents, studentNames, spokeSet])
 
   const handleCopy = async (): Promise<void> => {
     const text = utterances
@@ -158,7 +181,7 @@ export function AnalysisResultPage({
               총 발언 수: <b>{utterances.length}</b>회
             </span>
             <span className="rounded-lg bg-slate-100 px-3 py-1.5 text-slate-700">
-              참여 학생 수: <b>{studentNames.length}</b>명
+              참여 학생 수: <b>{nodeNames.length}</b>명
             </span>
             {isolated.length === 0 ? (
               <span className="rounded-lg bg-emerald-50 px-3 py-1.5 font-medium text-emerald-700">

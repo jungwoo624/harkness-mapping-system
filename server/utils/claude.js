@@ -4,6 +4,8 @@ const API_URL = 'https://api.anthropic.com/v1/messages';
 const ANTHROPIC_VERSION = '2023-06-01';
 /** 분석에 사용할 Claude 모델 */
 const MODEL = 'claude-sonnet-4-6';
+/** 하크니스 분석 응답 토큰 상한 (학생 다수 + 긴 한국어 피드백이 잘리지 않도록 충분히) */
+const ANALYSIS_MAX_TOKENS = 4000;
 /** JSON 파싱 실패 시 재호출 최대 횟수 */
 const MAX_PARSE_RETRIES = 2;
 
@@ -61,6 +63,29 @@ function formatUtterances(utterances) {
     .join('\n');
 }
 
+/** 출력 JSON 스키마(필드명 고정) — Claude가 정확히 이 구조로만 응답하도록 명시한다. */
+const OUTPUT_SCHEMA = `{
+  "overallAnalysis": "전체 토론 분석 (3~5문장, 한국어)",
+  "speakerMapping": [{ "originalLabel": "A", "studentName": "실제 학생 이름" }],
+  "individualReports": [
+    {
+      "studentName": "학생 이름",
+      "totalSpeeches": 0,
+      "totalDurationSeconds": 0,
+      "keyQuotes": ["대표 발언 2~3개"],
+      "strengths": ["잘한 점 2~3가지"],
+      "improvements": ["개선점 2~3가지 (코칭 톤)"],
+      "participationScore": 0
+    }
+  ],
+  "discussionFlowAnalysis": {
+    "dominantSpeaker": "발언 독점 학생 이름 또는 null",
+    "isolatedStudents": ["발언/연결이 없는 학생 이름"],
+    "turnTakingQuality": "균형 | 일부 독점 | 심한 독점 중 하나",
+    "suggestedNextTopics": ["다음 토론 추천 주제"]
+  }
+}`;
+
 /** 분석용 user 메시지를 구성한다. */
 function buildHarknessUserMessage({ title, studentNames, utterances }) {
   return (
@@ -69,7 +94,10 @@ function buildHarknessUserMessage({ title, studentNames, utterances }) {
     `참여 학생: ${(studentNames || []).join(', ')}\n\n` +
     '발언 기록:\n' +
     formatUtterances(utterances) +
-    '\n\n위 내용을 분석해서 지정된 JSON 형식으로 응답해주세요.'
+    '\n\n위 내용을 분석해 아래 JSON 스키마를 "정확히" 따라 응답하세요. ' +
+    '다른 키를 추가하거나 키 이름을 바꾸지 마세요. ' +
+    'individualReports에는 "참여 학생" 목록의 모든 학생에 대한 항목을 각각 포함하세요.\n\n' +
+    OUTPUT_SCHEMA
   );
 }
 
@@ -131,7 +159,7 @@ async function analyzeHarknessDiscussion({ utterances, studentNames, title, jobI
 
   let lastError;
   for (let attempt = 1; attempt <= MAX_PARSE_RETRIES + 1; attempt += 1) {
-    const raw = await callClaude(apiKey, HARKNESS_SYSTEM_PROMPT, userMessage, 2000);
+    const raw = await callClaude(apiKey, HARKNESS_SYSTEM_PROMPT, userMessage, ANALYSIS_MAX_TOKENS);
     try {
       const parsed = JSON.parse(extractJson(raw));
       console.log(`[${jobId}] Claude 분석 파싱 성공 (시도 ${attempt})`);
