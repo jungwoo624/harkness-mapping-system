@@ -1,7 +1,33 @@
 import { useEffect, useRef, useState } from 'react'
 import { uploadVideo } from '../utils/uploadVideo'
 import { pollAnalysisStatus } from '../utils/pollAnalysis'
-import type { AnalysisResult, AnalysisStatus } from '../utils/pollAnalysis'
+import type { AnalysisResult as BackendResult, AnalysisStatus } from '../utils/pollAnalysis'
+import type { AnalysisResult, DiscussionFlowAnalysis } from '../data/mockAnalysisResult'
+
+interface VideoUploadPageProps {
+  /** "결과 보기" 클릭 시 분석 결과를 상위로 전달 */
+  onViewResult?: (result: AnalysisResult, title: string) => void
+}
+
+const EMPTY_FLOW: DiscussionFlowAnalysis = {
+  dominantSpeaker: null,
+  isolatedStudents: [],
+  turnTakingQuality: '',
+  suggestedNextTopics: [],
+}
+
+/** 백엔드 결과(transcript+analysis)를 결과 화면용 AnalysisResult로 변환한다. */
+function toPageResult(r: BackendResult): AnalysisResult {
+  const a = (r.analysis ?? {}) as Partial<AnalysisResult>
+  return {
+    overallAnalysis: a.overallAnalysis ?? '',
+    speakerMapping: a.speakerMapping ?? [],
+    individualReports: a.individualReports ?? [],
+    discussionFlowAnalysis: a.discussionFlowAnalysis ?? EMPTY_FLOW,
+    utterances: r.transcript?.utterances ?? [],
+    studentNames: r.studentNames ?? [],
+  }
+}
 
 const MIN_STUDENTS = 3
 const MAX_STUDENTS = 12
@@ -62,7 +88,7 @@ function formatBytes(bytes: number): string {
  * 영상 분석 탭.
  * 입력(Step1~3) → 업로드/분석 진행 화면 → 완료/오류 흐름을 제공한다.
  */
-export function VideoUploadPage() {
+export function VideoUploadPage({ onViewResult }: VideoUploadPageProps) {
   // Step 1
   const [title, setTitle] = useState('')
   const [studentCount, setStudentCount] = useState(DEFAULT_STUDENTS)
@@ -83,7 +109,7 @@ export function VideoUploadPage() {
   const [progress, setProgress] = useState(0)
   const [message, setMessage] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [result, setResult] = useState<AnalysisResult | null>(null)
+  const [result, setResult] = useState<BackendResult | null>(null)
 
   // 인원 수가 바뀌면 이름 입력 칸 개수를 맞춘다 (기존 입력 보존)
   useEffect(() => {
@@ -249,8 +275,7 @@ export function VideoUploadPage() {
               <button
                 type="button"
                 onClick={() => {
-                  // 다음 단계에서 결과 화면으로 연결
-                  console.log('분석 결과:', result)
+                  if (result) onViewResult?.(toPageResult(result), result.title || title)
                 }}
                 className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500"
               >

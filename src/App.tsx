@@ -3,18 +3,33 @@ import { SessionPage } from './pages/SessionPage'
 import { VideoUploadPage } from './pages/VideoUploadPage'
 import { AnalysisResultPage } from './pages/AnalysisResultPage'
 import { mockAnalysisResult } from './data/mockAnalysisResult'
+import type { AnalysisResult } from './data/mockAnalysisResult'
 
 type Tab = 'manual' | 'video' | 'result'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'manual', label: '수동 매핑' },
   { id: 'video', label: '영상 분석' },
-  // 결과 화면 미리보기 (목 데이터) — 실제 연동(영상 분석 '결과 보기')은 다음 단계
-  { id: 'result', label: '결과 미리보기' },
+  { id: 'result', label: '결과' },
 ]
 
 function App() {
   const [tab, setTab] = useState<Tab>('manual')
+  // 영상 분석으로 생성된 실제 결과 (없으면 미리보기용 목 데이터 표시)
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null)
+  const [resultTitle, setResultTitle] = useState('')
+
+  const handleViewResult = (result: AnalysisResult, title: string): void => {
+    setAnalysisResult(result)
+    setResultTitle(title)
+    setTab('result')
+  }
+
+  const handleNewSession = (): void => {
+    setAnalysisResult(null)
+    setResultTitle('')
+    setTab('video')
+  }
 
   return (
     <div className="min-h-full bg-slate-50">
@@ -38,12 +53,14 @@ function App() {
       </nav>
 
       {tab === 'manual' && <SessionPage />}
-      {tab === 'video' && <VideoUploadPage />}
+      {tab === 'video' && <VideoUploadPage onViewResult={handleViewResult} />}
       {tab === 'result' && (
         <AnalysisResultPage
-          analysisResult={mockAnalysisResult}
-          sessionTitle="AI 시대에 인간 고유의 역량은 무엇인가"
-          onNewSession={() => setTab('video')}
+          analysisResult={analysisResult ?? mockAnalysisResult}
+          sessionTitle={
+            analysisResult ? resultTitle : '예시 결과 (영상 분석 전 미리보기)'
+          }
+          onNewSession={handleNewSession}
         />
       )}
     </div>
