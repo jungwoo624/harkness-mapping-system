@@ -26,19 +26,20 @@ const LABEL_GAP = 16
 /** 같은 학생 쌍의 중복 연결을 구분하기 위한 곡률 간격(px) */
 const CURVE_STEP = 30
 
-// Tailwind 색상을 SVG fill/stroke에 hex로 직접 적용
-const TABLE_STROKE = '#d1d5db' // gray-300 (연한 회색)
-const SEAT_STROKE = '#60a5fa' // blue-400
-const SEAT_SELECTED_STROKE = '#facc15' // yellow-400 (발언자 강조)
-const LABEL_DARK = '#1e3a8a' // blue-900
+// Cyber-Premium 팔레트를 SVG fill/stroke에 hex로 직접 적용
+const TABLE_STROKE = '#1f5a5a' // Midnight Teal 계열 (은은한 테이블 외곽)
+const SEAT_STROKE = '#00b3b3' // 딤 Cyan (좌석 기본 테두리)
+const SEAT_SELECTED_STROKE = '#FFD700' // Cyber Gold (발언자 강조)
+const LABEL_DARK = '#E5E5E5' // Platinum (기본 이름표)
 const LABEL_WHITE = '#ffffff'
-const ARROW_COLOR = '#93c5fd' // blue-300 (연한 파란색)
+const LABEL_PILL = '#003333' // Midnight Teal (상위 발언자 이름표 배경)
+const ARROW_COLOR = '#00FFFF' // Neon Cyan (발언 화살표)
 
-// 발언 횟수 구간별 좌석 색상
-const COLOR_NONE = '#e5e7eb' // 0회: 회색
-const COLOR_LOW = '#bfdbfe' // 1-2회: 연한 파랑
-const COLOR_MID = '#60a5fa' // 3-5회: 중간 파랑
-const COLOR_HIGH = '#2563eb' // 6회+: 진한 파랑
+// 발언 횟수 구간별 좌석 색상 (Void→Neon Cyan으로 강해짐)
+const COLOR_NONE = '#222222' // 0회: 어두운 회색
+const COLOR_LOW = '#0a4d4d' // 1-2회: 딤 틸
+const COLOR_MID = '#00a3a3' // 3-5회: 중간 시안
+const COLOR_HIGH = '#00FFFF' // 6회+: 네온 시안
 
 /** 특정 학생이 발언자인 기록 수(= 총 발언 횟수)를 센다. */
 function countSpeeches(records: SpeechRecord[], studentId: string): number {
@@ -168,7 +169,7 @@ export function HarknessTable({
   return (
     <div className="flex flex-col items-center gap-3">
       {!readOnly && (
-        <p className="text-sm font-medium text-slate-700" data-testid="status-text">
+        <p className="text-sm font-medium text-cyan" data-testid="status-text">
           {statusText}
         </p>
       )}
@@ -249,7 +250,7 @@ export function HarknessTable({
                   width={pillWidth}
                   height={19}
                   rx={5}
-                  fill={LABEL_DARK}
+                  fill={LABEL_PILL}
                 />
               )}
               <text
@@ -266,7 +267,7 @@ export function HarknessTable({
         })}
       </svg>
 
-      <p className="text-sm text-slate-500" data-testid="record-count">
+      <p className="text-sm text-platinum/60" data-testid="record-count">
         총 발언 기록: {speechRecords.length}건
       </p>
     </div>

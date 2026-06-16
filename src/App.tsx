@@ -14,8 +14,7 @@ const TABS: { id: Tab; label: string }[] = [
 ]
 
 function App() {
-  const [tab, setTab] = useState<Tab>('manual')
-  // 영상 분석으로 생성된 실제 결과 (없으면 미리보기용 목 데이터 표시)
+  const [tab, setTab] = useState<Tab>('video')
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null)
   const [resultTitle, setResultTitle] = useState('')
 
@@ -32,37 +31,50 @@ function App() {
   }
 
   return (
-    <div className="min-h-full bg-slate-50">
-      <nav className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-3xl gap-1 px-4">
+    <div className="min-h-full bg-void text-white">
+      {/* 브랜드 헤더 */}
+      <header className="border-b border-cyan/10">
+        <div className="mx-auto max-w-3xl px-4 pt-10 pb-6 text-center">
+          <h1 className="font-display text-4xl font-bold tracking-tight text-cyan text-glow sm:text-5xl">
+            Xeno-Lykeion
+          </h1>
+          <p className="mt-3 text-sm font-light tracking-wide text-platinum sm:text-base">
+            Where Human Minds and Intelligent Systems Evolve Together.
+          </p>
+        </div>
+
+        {/* 탭 네비게이션 */}
+        <nav className="mx-auto flex max-w-3xl justify-center gap-2 px-4">
           {TABS.map(({ id, label }) => (
             <button
               key={id}
               type="button"
               onClick={() => setTab(id)}
-              className={`-mb-px border-b-2 px-4 py-3 text-sm font-semibold transition-colors ${
+              className={`-mb-px border-b-2 px-5 py-3 text-sm font-semibold tracking-wide transition-colors ${
                 tab === id
-                  ? 'border-indigo-600 text-indigo-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-700'
+                  ? 'border-cyan text-cyan text-glow'
+                  : 'border-transparent text-platinum/60 hover:text-platinum'
               }`}
             >
               {label}
             </button>
           ))}
-        </div>
-      </nav>
+        </nav>
+      </header>
 
-      {tab === 'manual' && <SessionPage />}
-      {tab === 'video' && <VideoUploadPage onViewResult={handleViewResult} />}
-      {tab === 'result' && (
-        <AnalysisResultPage
-          analysisResult={analysisResult ?? mockAnalysisResult}
-          sessionTitle={
-            analysisResult ? resultTitle : '예시 결과 (영상 분석 전 미리보기)'
-          }
-          onNewSession={handleNewSession}
-        />
-      )}
+      <main className="pb-16">
+        {tab === 'manual' && <SessionPage />}
+        {tab === 'video' && <VideoUploadPage onViewResult={handleViewResult} />}
+        {tab === 'result' && (
+          <AnalysisResultPage
+            analysisResult={analysisResult ?? mockAnalysisResult}
+            sessionTitle={
+              analysisResult ? resultTitle : '예시 결과 (영상 분석 전 미리보기)'
+            }
+            onNewSession={handleNewSession}
+          />
+        )}
+      </main>
     </div>
   )
 }

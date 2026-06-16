@@ -22,38 +22,38 @@ export function SessionReport({ session }: SessionReportProps) {
   return (
     <section className="space-y-6 text-left" data-testid="session-report">
       <div>
-        <h2 className="text-lg font-bold text-slate-900">참여 리포트</h2>
-        <p className="text-sm text-slate-500">총 발언 {overall.totalSpeechCount}건</p>
+        <h2 className="text-lg font-bold text-white">참여 리포트</h2>
+        <p className="text-sm text-platinum/60">총 발언 {overall.totalSpeechCount}건</p>
       </div>
 
       {/* 전체 요약 카드 */}
       <div
-        className="space-y-1.5 rounded-xl border border-slate-200 bg-white p-4"
+        className="space-y-1.5 rounded-xl border border-cyan/10 bg-obsidian p-4"
         data-testid="summary-card"
       >
-        <p className="text-sm text-slate-700">
+        <p className="text-sm text-platinum">
           가장 활발한 참여자:{' '}
-          <span className="font-semibold text-slate-900" data-testid="summary-most">
+          <span className="font-semibold text-white" data-testid="summary-most">
             {overall.mostActiveStudent ?? '-'}
           </span>
         </p>
-        <p className="text-sm text-slate-700">
+        <p className="text-sm text-platinum">
           가장 조용했던 참여자:{' '}
-          <span className="font-semibold text-slate-900" data-testid="summary-least">
+          <span className="font-semibold text-white" data-testid="summary-least">
             {overall.leastActiveStudent ?? '-'}
           </span>
         </p>
 
         {overall.isolatedStudents.length > 0 ? (
           <p
-            className="rounded-lg bg-orange-50 px-3 py-2 text-sm font-semibold text-orange-700"
+            className="rounded-lg bg-gold/10 px-3 py-2 text-sm font-semibold text-gold"
             data-testid="summary-isolated"
           >
             ⚠️ 대화에서 소외된 학생: {overall.isolatedStudents.join(', ')}
           </p>
         ) : (
           <p
-            className="rounded-lg bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700"
+            className="rounded-lg bg-cyan/10 px-3 py-2 text-sm font-semibold text-cyan"
             data-testid="summary-all-participated"
           >
             ✅ 모든 학생이 대화에 참여했습니다
@@ -63,7 +63,7 @@ export function SessionReport({ session }: SessionReportProps) {
 
       {/* 학생별 참여 현황 - 막대 그래프 */}
       <div>
-        <h3 className="mb-2 text-sm font-semibold text-slate-700">학생별 참여 현황</h3>
+        <h3 className="mb-2 text-sm font-semibold text-platinum">학생별 참여 현황</h3>
         <div className="space-y-2">
           {stats.map((stat) => {
             const pct =
@@ -76,17 +76,17 @@ export function SessionReport({ session }: SessionReportProps) {
                 className="flex items-center gap-3"
                 data-testid={`bar-${stat.studentId}`}
               >
-                <span className="w-16 shrink-0 truncate text-sm text-slate-700">
+                <span className="w-16 shrink-0 truncate text-sm text-platinum">
                   {stat.studentName}
                 </span>
-                <div className="h-5 flex-1 overflow-hidden rounded bg-slate-100">
+                <div className="h-5 flex-1 overflow-hidden rounded bg-obsidian/5">
                   <div
-                    className="h-full rounded bg-indigo-500"
+                    className="h-full rounded bg-cyan"
                     style={{ width: `${pct}%` }}
                     data-testid={`bar-fill-${stat.studentId}`}
                   />
                 </div>
-                <span className="w-8 shrink-0 text-right text-sm font-semibold text-slate-700">
+                <span className="w-8 shrink-0 text-right text-sm font-semibold text-platinum">
                   {stat.totalSpeeches}
                 </span>
               </div>
@@ -96,9 +96,9 @@ export function SessionReport({ session }: SessionReportProps) {
       </div>
 
       {/* 학생별 상세 표 */}
-      <div className="overflow-hidden rounded-xl border border-slate-200">
+      <div className="overflow-hidden rounded-xl border border-cyan/10">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-left text-xs text-slate-500">
+          <thead className="bg-obsidian/5 text-left text-xs text-platinum/60">
             <tr>
               <th className="px-3 py-2 font-medium">학생</th>
               <th className="px-3 py-2 font-medium">발언</th>
@@ -109,17 +109,17 @@ export function SessionReport({ session }: SessionReportProps) {
           <tbody className="divide-y divide-slate-100">
             {stats.map((stat) => (
               <tr key={stat.studentId} data-testid={`report-row-${stat.studentId}`}>
-                <td className="px-3 py-2 font-medium text-slate-800">
+                <td className="px-3 py-2 font-medium text-white">
                   {stat.studentName}
                 </td>
                 <td
-                  className="px-3 py-2 text-slate-700"
+                  className="px-3 py-2 text-platinum"
                   data-testid={`report-speeches-${stat.studentId}`}
                 >
                   {stat.totalSpeeches}
                 </td>
-                <td className="px-3 py-2 text-slate-700">{stat.connectionsCount}</td>
-                <td className="px-3 py-2 text-slate-500">
+                <td className="px-3 py-2 text-platinum">{stat.connectionsCount}</td>
+                <td className="px-3 py-2 text-platinum/60">
                   {stat.connectedStudentIds.map(nameById).join(', ') || '-'}
                 </td>
               </tr>

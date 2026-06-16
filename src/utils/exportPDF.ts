@@ -2,8 +2,8 @@ import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import type { AnalysisResult, IndividualReport } from '../data/mockAnalysisResult'
 
-/** 서비스 이름 (추후 브랜딩 자리) */
-const SERVICE_NAME = 'Harkness Analyzer'
+/** 서비스 이름 (브랜딩) */
+const SERVICE_NAME = 'Xeno-Lykeion'
 /** 인쇄용 레이아웃 너비(px, ~A4 96dpi) */
 const RENDER_WIDTH = 794
 
@@ -41,9 +41,10 @@ function stars(score: number): string {
 
 function headerHTML(title: string): string {
   return `
-  <div style="background:#4f46e5;color:#ffffff;padding:22px 24px;">
-    <h1 style="margin:0;font-size:22px;font-weight:800;">하크니스 토론 분석 리포트</h1>
-    <p style="margin:8px 0 0;font-size:13px;opacity:.92;">${today()} · ${esc(title || '제목 없는 토론')}</p>
+  <div style="background:#050505;color:#ffffff;padding:22px 24px;border-bottom:2px solid #00FFFF;">
+    <p style="margin:0;font-size:13px;font-weight:700;letter-spacing:.04em;color:#00FFFF;">XENO-LYKEION</p>
+    <h1 style="margin:6px 0 0;font-size:22px;font-weight:800;">하크니스 토론 분석 리포트</h1>
+    <p style="margin:8px 0 0;font-size:13px;opacity:.85;">${today()} · ${esc(title || '제목 없는 토론')}</p>
   </div>`
 }
 

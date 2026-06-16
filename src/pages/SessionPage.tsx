@@ -80,15 +80,15 @@ export function SessionPage() {
     return (
       <main className="mx-auto max-w-md px-6 py-16">
         <header className="mb-8 text-center">
-          <p className="text-sm font-semibold uppercase tracking-wide text-indigo-600">
+          <p className="text-sm font-semibold uppercase tracking-wide text-cyan">
             Harkness Session
           </p>
-          <h1 className="mt-1 text-3xl font-bold text-slate-900">새 토론 세션</h1>
+          <h1 className="mt-1 text-3xl font-bold text-white">새 토론 세션</h1>
         </header>
 
-        <div className="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="space-y-5 rounded-2xl border border-cyan/10 bg-obsidian p-6 shadow-sm">
           <label className="block">
-            <span className="mb-1 block text-sm font-medium text-slate-700">
+            <span className="mb-1 block text-sm font-medium text-platinum">
               토론 주제
             </span>
             <input
@@ -97,19 +97,19 @@ export function SessionPage() {
               onChange={(e) => setTitle(e.target.value)}
               placeholder="토론 주제를 입력하세요"
               data-testid="topic-input"
-              className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-slate-900 outline-none placeholder:text-slate-400 focus:border-indigo-500"
+              className="w-full rounded-xl border border-cyan/15 bg-void px-3.5 py-2.5 text-white outline-none placeholder:text-platinum/40 focus:border-cyan"
             />
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-sm font-medium text-slate-700">
+            <span className="mb-1 block text-sm font-medium text-platinum">
               참여 학생 수
             </span>
             <select
               value={studentCount}
               onChange={(e) => setStudentCount(Number(e.target.value))}
               data-testid="count-select"
-              className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-slate-900 outline-none focus:border-indigo-500"
+              className="w-full rounded-xl border border-cyan/15 bg-obsidian px-3.5 py-2.5 text-white outline-none focus:border-cyan"
             >
               {STUDENT_OPTIONS.map((n) => (
                 <option key={n} value={n}>
@@ -123,7 +123,7 @@ export function SessionPage() {
             type="button"
             onClick={startSession}
             data-testid="start-session"
-            className="w-full rounded-xl bg-indigo-600 px-4 py-3 font-semibold text-white transition hover:bg-indigo-700"
+            className="w-full rounded-xl bg-cyan px-4 py-3 font-semibold text-void shadow-glow transition hover:bg-cyan/80"
           >
             세션 시작
           </button>
@@ -136,8 +136,8 @@ export function SessionPage() {
   if (phase === 'ended') {
     return (
       <main className="mx-auto max-w-2xl px-6 py-16 text-center" data-testid="end-screen">
-        <h1 className="text-2xl font-bold text-slate-900">세션이 종료되었습니다.</h1>
-        <p className="mt-3 text-slate-600">
+        <h1 className="text-2xl font-bold text-white">세션이 종료되었습니다.</h1>
+        <p className="mt-3 text-platinum/80">
           진행시간: {durationMinutes}분, 총 발언 {speechRecords.length}건
         </p>
 
@@ -153,7 +153,7 @@ export function SessionPage() {
             type="button"
             onClick={() => setSavedDump(JSON.stringify(getAllSessions(), null, 2))}
             data-testid="view-saved"
-            className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-400"
+            className="rounded-xl border border-cyan/15 px-4 py-2.5 text-sm font-semibold text-platinum transition hover:border-cyan/40"
           >
             저장된 세션 목록 보기
           </button>
@@ -161,7 +161,7 @@ export function SessionPage() {
             type="button"
             onClick={resetToSetup}
             data-testid="new-session"
-            className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700"
+            className="rounded-xl bg-cyan px-4 py-2.5 text-sm font-semibold text-void shadow-glow transition hover:bg-cyan/80"
           >
             새 세션 시작
           </button>
@@ -170,7 +170,7 @@ export function SessionPage() {
         {savedDump !== null && (
           <pre
             data-testid="session-dump"
-            className="mt-6 max-h-80 overflow-auto rounded-xl bg-slate-900 p-4 text-left text-xs text-slate-100"
+            className="mt-6 max-h-80 overflow-auto rounded-xl bg-void p-4 text-left text-xs text-platinum"
           >
             {savedDump}
           </pre>
@@ -184,25 +184,25 @@ export function SessionPage() {
     <main className="mx-auto max-w-3xl px-6 py-10">
       <header className="mb-6 flex items-center justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-indigo-600">
+          <p className="text-sm font-semibold uppercase tracking-wide text-cyan">
             진행 중
           </p>
-          <h1 className="mt-0.5 text-2xl font-bold text-slate-900" data-testid="session-title">
+          <h1 className="mt-0.5 text-2xl font-bold text-white" data-testid="session-title">
             {title || '제목 없는 토론'}
           </h1>
-          <p className="text-sm text-slate-500">학생 {students.length}명</p>
+          <p className="text-sm text-platinum/60">학생 {students.length}명</p>
         </div>
         <button
           type="button"
           onClick={endSession}
           data-testid="end-session"
-          className="shrink-0 rounded-xl bg-rose-600 px-4 py-2.5 font-semibold text-white transition hover:bg-rose-700"
+          className="shrink-0 rounded-xl bg-danger px-4 py-2.5 font-semibold text-white transition hover:bg-danger/80"
         >
           세션 종료
         </button>
       </header>
 
-      <div className="flex justify-center rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex justify-center rounded-2xl border border-cyan/10 bg-obsidian p-4 shadow-sm">
         <HarknessTable
           students={students}
           speechRecords={speechRecords}
