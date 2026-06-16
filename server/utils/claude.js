@@ -4,8 +4,8 @@ const API_URL = 'https://api.anthropic.com/v1/messages';
 const ANTHROPIC_VERSION = '2023-06-01';
 /** 분석에 사용할 Claude 모델 */
 const MODEL = 'claude-sonnet-4-6';
-/** 하크니스 분석 응답 토큰 상한 (학생 다수 + 긴 한국어 피드백이 잘리지 않도록 충분히) */
-const ANALYSIS_MAX_TOKENS = 4000;
+/** 하크니스 분석 응답 토큰 상한 (학생 다수 + 한국어 피드백이 잘리지 않도록 충분히) */
+const ANALYSIS_MAX_TOKENS = 8000;
 /** JSON 파싱 실패 시 재호출 최대 횟수 */
 const MAX_PARSE_RETRIES = 2;
 
@@ -96,7 +96,10 @@ function buildHarknessUserMessage({ title, studentNames, utterances }) {
     formatUtterances(utterances) +
     '\n\n위 내용을 분석해 아래 JSON 스키마를 "정확히" 따라 응답하세요. ' +
     '다른 키를 추가하거나 키 이름을 바꾸지 마세요. ' +
-    'individualReports에는 "참여 학생" 목록의 모든 학생에 대한 항목을 각각 포함하세요.\n\n' +
+    'individualReports에는 "참여 학생" 목록의 모든 학생에 대한 항목을 각각 포함하세요.\n' +
+    '응답이 잘리지 않도록 간결하게 작성하세요: ' +
+    'keyQuotes/strengths/improvements는 각각 최대 2개, 각 항목은 한 문장(40자 내외), ' +
+    'overallAnalysis는 3~4문장, suggestedNextTopics는 최대 3개로 제한합니다.\n\n' +
     OUTPUT_SCHEMA
   );
 }
