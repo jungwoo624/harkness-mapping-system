@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { HarknessTable } from '../components/HarknessTable'
 import { createStudents } from '../utils/session'
+import { exportToPDF, exportFullReportToPDF } from '../utils/exportPDF'
 import type { SpeechRecord, Student } from '../types'
 import type { AnalysisResult, Utterance } from '../data/mockAnalysisResult'
 
@@ -100,6 +101,34 @@ export function AnalysisResultPage({
 }: AnalysisResultPageProps) {
   const [tab, setTab] = useState<SubTab>('network')
   const [copied, setCopied] = useState(false)
+  // PDF 저장 상태: key별 'saving' | 'done'
+  const [pdfStatus, setPdfStatus] = useState<Record<string, 'saving' | 'done'>>({})
+
+  const runExport = async (key: string, fn: () => Promise<void>): Promise<void> => {
+    setPdfStatus((s) => ({ ...s, [key]: 'saving' }))
+    try {
+      await fn()
+      setPdfStatus((s) => ({ ...s, [key]: 'done' }))
+      setTimeout(() => {
+        setPdfStatus((s) => {
+          const next = { ...s }
+          delete next[key]
+          return next
+        })
+      }, 2000)
+    } catch (err) {
+      console.error('PDF 저장 실패:', err)
+      setPdfStatus((s) => {
+        const next = { ...s }
+        delete next[key]
+        return next
+      })
+      alert('PDF 저장에 실패했습니다.')
+    }
+  }
+
+  const pdfLabel = (key: string, base: string): string =>
+    pdfStatus[key] === 'saving' ? '저장 중...' : pdfStatus[key] === 'done' ? '저장 완료!' : base
 
   const { utterances, studentNames, individualReports, discussionFlowAnalysis } =
     analysisResult
@@ -233,9 +262,23 @@ export function AnalysisResultPage({
               key={report.studentName}
               className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3">
                 <h3 className="text-lg font-bold text-slate-800">{report.studentName}</h3>
-                <StarRating score={report.participationScore} />
+                <div className="flex items-center gap-3">
+                  <StarRating score={report.participationScore} />
+                  <button
+                    type="button"
+                    disabled={pdfStatus[`s-${report.studentName}`] === 'saving'}
+                    onClick={() =>
+                      runExport(`s-${report.studentName}`, () =>
+                        exportToPDF(report.studentName, report, sessionTitle),
+                      )
+                    }
+                    className="shrink-0 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-200 disabled:opacity-60"
+                  >
+                    {pdfLabel(`s-${report.studentName}`, 'PDF 저장')}
+                  </button>
+                </div>
               </div>
 
               <div className="mt-2 flex gap-4 text-sm text-slate-600">
@@ -331,6 +374,17 @@ export function AnalysisResultPage({
               </ol>
             </div>
           )}
+
+          <button
+            type="button"
+            disabled={pdfStatus['full'] === 'saving'}
+            onClick={() =>
+              runExport('full', () => exportFullReportToPDF(analysisResult, sessionTitle))
+            }
+            className="self-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-60"
+          >
+            {pdfLabel('full', '전체 리포트 PDF 저장')}
+          </button>
         </section>
       )}
 
@@ -338,11 +392,13 @@ export function AnalysisResultPage({
       <div className="mt-2 flex justify-between gap-3 border-t border-slate-200 pt-5">
         <button
           type="button"
-          disabled
-          title="다음 단계에서 구현됩니다"
-          className="rounded-lg bg-slate-200 px-4 py-2 text-sm font-semibold text-slate-400"
+          disabled={pdfStatus['full'] === 'saving'}
+          onClick={() =>
+            runExport('full', () => exportFullReportToPDF(analysisResult, sessionTitle))
+          }
+          className="rounded-lg bg-slate-700 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-600 disabled:opacity-60"
         >
-          PDF로 저장
+          {pdfLabel('full', 'PDF로 저장')}
         </button>
         <button
           type="button"
