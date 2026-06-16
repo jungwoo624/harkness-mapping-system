@@ -4,6 +4,8 @@ const express = require('express');
 const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 
+const { extractAudio } = require('../utils/extractAudio');
+
 const router = express.Router();
 
 // 업로드 임시 폴더
@@ -68,10 +70,16 @@ router.post('/', (req, res) => {
         `저장명=${req.file.filename} | 크기=${req.file.size} bytes`,
     );
 
+    // 응답을 먼저 보낸다
     res.json({
       jobId,
       fileName: req.file.originalname,
       fileSize: req.file.size,
+    });
+
+    // 음성 추출은 백그라운드로 비동기 진행 (응답을 막지 않음)
+    extractAudio(req.file.path, jobId).catch((err) => {
+      console.error(err.message);
     });
   });
 });
