@@ -210,11 +210,11 @@ export function VideoUploadPage({ onViewResult }: VideoUploadPageProps) {
     return (
       <div className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-8">
         <header>
-          <h1 className="text-2xl font-bold text-white">{title || '토론 분석'}</h1>
-          <p className="mt-1 text-sm text-platinum/60">영상을 분석하고 있습니다.</p>
+          <h1 className="text-2xl font-bold text-slate-900">{title || '토론 분석'}</h1>
+          <p className="mt-1 text-sm text-slate-500">영상을 분석하고 있습니다.</p>
         </header>
 
-        <section className="rounded-xl border border-cyan/10 bg-obsidian p-6 shadow-sm">
+        <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           {/* 단계 목록 */}
           <ul className="flex flex-col gap-3">
             {STAGES.map((s, i) => {
@@ -225,10 +225,10 @@ export function VideoUploadPage({ onViewResult }: VideoUploadPageProps) {
                   <span
                     className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
                       done
-                        ? 'bg-cyan text-void'
+                        ? 'bg-slate-900 text-white'
                         : active
-                          ? 'bg-cyan text-void'
-                          : 'bg-obsidian/10 text-platinum/40'
+                          ? 'bg-slate-900 text-white'
+                          : 'bg-slate-200 text-slate-400'
                     }`}
                   >
                     {done ? '✓' : i + 1}
@@ -236,10 +236,10 @@ export function VideoUploadPage({ onViewResult }: VideoUploadPageProps) {
                   <span
                     className={`text-sm ${
                       active
-                        ? 'font-semibold text-cyan'
+                        ? 'font-semibold text-teal-600'
                         : done
-                          ? 'text-platinum'
-                          : 'text-platinum/40'
+                          ? 'text-slate-700'
+                          : 'text-slate-400'
                     }`}
                   >
                     {s.label}
@@ -251,25 +251,25 @@ export function VideoUploadPage({ onViewResult }: VideoUploadPageProps) {
           </ul>
 
           {/* 진행 바 */}
-          <div className="mt-5 h-3 w-full overflow-hidden rounded-full bg-obsidian/5">
+          <div className="mt-5 h-3 w-full overflow-hidden rounded-full bg-slate-100">
             <div
               style={{ width: `${progress}%` }}
               className={`h-3 rounded-full transition-all duration-500 ${
-                phase === 'error' ? 'bg-danger' : 'bg-cyan'
+                phase === 'error' ? 'bg-danger' : 'bg-slate-900'
               }`}
             />
           </div>
-          <p className="mt-2 text-right text-xs text-platinum/40">{progress}%</p>
+          <p className="mt-2 text-right text-xs text-slate-400">{progress}%</p>
 
           {/* 현재 단계 설명 */}
           {phase === 'running' && (
-            <p className="mt-2 text-center text-sm text-platinum/80">{message}</p>
+            <p className="mt-2 text-center text-sm text-slate-600">{message}</p>
           )}
 
           {/* 완료 */}
           {phase === 'done' && (
             <div className="mt-4 flex flex-col items-center gap-3">
-              <p className="text-center text-sm font-medium text-cyan">
+              <p className="text-center text-sm font-medium text-teal-600">
                 분석이 완료되었습니다!
               </p>
               <button
@@ -277,7 +277,7 @@ export function VideoUploadPage({ onViewResult }: VideoUploadPageProps) {
                 onClick={() => {
                   if (result) onViewResult?.(toPageResult(result), result.title || title)
                 }}
-                className="rounded-lg bg-cyan px-5 py-2.5 text-sm font-semibold text-void shadow-glow hover:bg-cyan/80"
+                className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-700"
               >
                 결과 보기
               </button>
@@ -293,7 +293,7 @@ export function VideoUploadPage({ onViewResult }: VideoUploadPageProps) {
               <button
                 type="button"
                 onClick={handleRetry}
-                className="rounded-lg bg-obsidian/10 px-5 py-2.5 text-sm font-semibold text-white hover:bg-obsidian/20"
+                className="rounded-lg bg-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-900 hover:bg-slate-200"
               >
                 다시 시도
               </button>
@@ -308,34 +308,34 @@ export function VideoUploadPage({ onViewResult }: VideoUploadPageProps) {
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-8">
       <header>
-        <h1 className="text-2xl font-bold text-white">영상으로 토론 분석</h1>
-        <p className="mt-1 text-sm text-platinum/60">
+        <h1 className="text-2xl font-bold text-slate-900">영상으로 토론 분석</h1>
+        <p className="mt-1 text-sm text-slate-500">
           토론 영상을 업로드하면 자동으로 전사하고 발언을 분석합니다.
         </p>
       </header>
 
       {/* Step 1: 기본 정보 */}
-      <section className="rounded-xl border border-cyan/10 bg-obsidian p-5 shadow-sm">
+      <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
         <StepHeader index={1} label="기본 정보 입력" active={step === 1} done={isStep1Done} />
 
         <div className="mt-4 flex flex-col gap-4">
-          <label className="flex flex-col gap-1 text-sm font-medium text-platinum/80">
+          <label className="flex flex-col gap-1 text-sm font-medium text-slate-600">
             토론 주제 <span className="text-danger">*</span>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="토론 주제를 입력하세요"
-              className="rounded-lg border border-cyan/15 bg-void px-3 py-2 text-base font-normal text-white outline-none focus:border-cyan focus:ring-2 focus:ring-cyan/20"
+              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-base font-normal text-slate-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
             />
           </label>
 
-          <label className="flex flex-col gap-1 text-sm font-medium text-platinum/80">
+          <label className="flex flex-col gap-1 text-sm font-medium text-slate-600">
             참여 학생 수
             <select
               value={studentCount}
               onChange={(e) => setStudentCount(Number(e.target.value))}
-              className="rounded-lg border border-cyan/15 bg-void px-3 py-2 text-base font-normal text-white outline-none focus:border-cyan focus:ring-2 focus:ring-cyan/20"
+              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-base font-normal text-slate-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
             >
               {STUDENT_OPTIONS.map((n) => (
                 <option key={n} value={n}>
@@ -346,7 +346,7 @@ export function VideoUploadPage({ onViewResult }: VideoUploadPageProps) {
           </label>
 
           <div className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-platinum/80">학생 이름 (선택)</span>
+            <span className="text-sm font-medium text-slate-600">학생 이름 (선택)</span>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {names.map((name, i) => (
                 <input
@@ -355,7 +355,7 @@ export function VideoUploadPage({ onViewResult }: VideoUploadPageProps) {
                   value={name}
                   onChange={(e) => updateName(i, e.target.value)}
                   placeholder="학생 이름을 입력하세요"
-                  className="rounded-lg border border-cyan/15 bg-void px-3 py-2 text-sm text-white outline-none focus:border-cyan focus:ring-2 focus:ring-cyan/20"
+                  className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
                 />
               ))}
             </div>
@@ -364,7 +364,7 @@ export function VideoUploadPage({ onViewResult }: VideoUploadPageProps) {
       </section>
 
       {/* Step 2: 영상 업로드 */}
-      <section className="rounded-xl border border-cyan/10 bg-obsidian p-5 shadow-sm">
+      <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
         <StepHeader index={2} label="영상 업로드" active={step === 2} done={isStep2Done} />
 
         <div className="mt-4 flex flex-col gap-3">
@@ -383,12 +383,12 @@ export function VideoUploadPage({ onViewResult }: VideoUploadPageProps) {
             onDrop={handleDrop}
             className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-10 text-center transition-colors ${
               isDragging
-                ? 'border-cyan bg-cyan/10'
-                : 'border-cyan/15 bg-obsidian/5 hover:border-cyan/60 hover:bg-obsidian/10'
+                ? 'border-teal-600 bg-teal-50'
+                : 'border-gray-300 bg-slate-100 hover:border-gray-400 hover:bg-slate-200'
             }`}
           >
             <svg
-              className="h-10 w-10 text-platinum/40"
+              className="h-10 w-10 text-slate-400"
               fill="none"
               viewBox="0 0 24 24"
               strokeWidth={1.5}
@@ -401,10 +401,10 @@ export function VideoUploadPage({ onViewResult }: VideoUploadPageProps) {
                 d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"
               />
             </svg>
-            <p className="text-sm font-medium text-platinum">
+            <p className="text-sm font-medium text-slate-700">
               영상을 여기에 드래그하거나 클릭하여 업로드
             </p>
-            <p className="text-xs text-platinum/40">지원 형식: MP4, MOV, WebM (최대 500MB)</p>
+            <p className="text-xs text-slate-400">지원 형식: MP4, MOV, WebM (최대 500MB)</p>
             <input
               ref={fileInputRef}
               type="file"
@@ -415,9 +415,9 @@ export function VideoUploadPage({ onViewResult }: VideoUploadPageProps) {
           </div>
 
           {file && (
-            <div className="flex items-center justify-between rounded-lg bg-obsidian/5 px-3 py-2 text-sm">
-              <span className="truncate font-medium text-platinum">{file.name}</span>
-              <span className="ml-3 shrink-0 text-platinum/60">{formatBytes(file.size)}</span>
+            <div className="flex items-center justify-between rounded-lg bg-slate-100 px-3 py-2 text-sm">
+              <span className="truncate font-medium text-slate-700">{file.name}</span>
+              <span className="ml-3 shrink-0 text-slate-500">{formatBytes(file.size)}</span>
             </div>
           )}
 
@@ -425,14 +425,14 @@ export function VideoUploadPage({ onViewResult }: VideoUploadPageProps) {
             <video
               src={previewUrl}
               controls
-              className="w-full rounded-lg border border-cyan/10 bg-black"
+              className="w-full rounded-lg border border-gray-200 bg-black"
             />
           )}
         </div>
       </section>
 
       {/* Step 3: 분석 시작 */}
-      <section className="rounded-xl border border-cyan/10 bg-obsidian p-5 shadow-sm">
+      <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
         <StepHeader index={3} label="분석 시작" active={step === 3} done={false} />
 
         <div className="mt-4 flex flex-col items-center gap-2">
@@ -440,11 +440,11 @@ export function VideoUploadPage({ onViewResult }: VideoUploadPageProps) {
             type="button"
             onClick={handleAnalyze}
             disabled={!canAnalyze}
-            className="w-full rounded-lg bg-cyan px-4 py-3 text-base font-semibold text-void shadow-glow transition-colors hover:bg-cyan/80 disabled:cursor-not-allowed disabled:bg-obsidian/10"
+            className="w-full rounded-lg bg-slate-900 px-4 py-3 text-base font-semibold text-white shadow-sm transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-200"
           >
             AI 분석 시작
           </button>
-          <p className="text-xs text-platinum/40">
+          <p className="text-xs text-slate-400">
             영상 길이에 따라 1~3분 소요됩니다. 분석 중 페이지를 닫지 마세요.
           </p>
 
@@ -473,15 +473,15 @@ function StepHeader({ index, label, active, done }: StepHeaderProps) {
       <span
         className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
           done
-            ? 'bg-cyan text-void'
+            ? 'bg-slate-900 text-white'
             : active
-              ? 'bg-cyan text-void'
-              : 'bg-obsidian/10 text-platinum/60'
+              ? 'bg-slate-900 text-white'
+              : 'bg-slate-200 text-slate-500'
         }`}
       >
         {done ? '✓' : index}
       </span>
-      <h2 className="text-lg font-semibold text-white">
+      <h2 className="text-lg font-semibold text-slate-900">
         Step {index}. {label}
       </h2>
     </div>

@@ -31,14 +31,14 @@ function App() {
   }
 
   return (
-    <div className="min-h-full bg-void text-white">
+    <div className="min-h-full bg-white text-slate-900">
       {/* 브랜드 헤더 */}
-      <header className="border-b border-cyan/10">
+      <header className="border-b border-gray-200">
         <div className="mx-auto max-w-3xl px-4 pt-10 pb-6 text-center">
-          <h1 className="font-display text-4xl font-bold tracking-tight text-cyan text-glow sm:text-5xl">
+          <h1 className="font-display text-4xl font-bold tracking-tight text-teal-600  sm:text-5xl">
             Xeno-Lykeion
           </h1>
-          <p className="mt-3 text-sm font-light tracking-wide text-platinum sm:text-base">
+          <p className="mt-3 text-sm font-light tracking-wide text-slate-700 sm:text-base">
             Where Human Minds and Intelligent Systems Evolve Together.
           </p>
         </div>
@@ -52,8 +52,8 @@ function App() {
               onClick={() => setTab(id)}
               className={`-mb-px border-b-2 px-5 py-3 text-sm font-semibold tracking-wide transition-colors ${
                 tab === id
-                  ? 'border-cyan text-cyan text-glow'
-                  : 'border-transparent text-platinum/60 hover:text-platinum'
+                  ? 'border-teal-600 text-teal-600 '
+                  : 'border-transparent text-slate-500 hover:text-slate-700'
               }`}
             >
               {label}

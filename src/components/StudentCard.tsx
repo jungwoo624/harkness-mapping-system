@@ -7,18 +7,18 @@ interface StudentCardProps {
 /** 학생 한 명의 참여 통계(발언 수·연결 수)를 보여주는 카드 */
 export function StudentCard({ stat }: StudentCardProps) {
   return (
-    <div className="flex items-center justify-between rounded-xl border border-cyan/10 bg-obsidian px-4 py-3 shadow-sm transition hover:border-cyan/60 hover:shadow">
+    <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm transition hover:border-gray-400 hover:shadow">
       <div className="flex items-center gap-3">
-        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-cyan/15 font-bold text-cyan">
+        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-teal-50 font-bold text-teal-600">
           {stat.studentName.charAt(0)}
         </span>
-        <span className="font-medium text-white">{stat.studentName}</span>
+        <span className="font-medium text-slate-900">{stat.studentName}</span>
       </div>
       <div className="flex gap-2 text-xs font-semibold">
-        <span className="rounded-full bg-obsidian/5 px-2.5 py-1 text-platinum/80">
+        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
           발언 {stat.totalSpeeches}
         </span>
-        <span className="rounded-full bg-cyan/10 px-2.5 py-1 text-cyan">
+        <span className="rounded-full bg-teal-50 px-2.5 py-1 text-teal-600">
           연결 {stat.connectionsCount}
         </span>
       </div>

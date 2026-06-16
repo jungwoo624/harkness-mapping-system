@@ -37,17 +37,17 @@ export function ReportPage({ session }: ReportPageProps) {
   return (
     <div className="space-y-6">
       <section
-        className="rounded-xl border border-cyan/20 bg-cyan/10 p-4 text-left"
+        className="rounded-xl border border-gray-300 bg-teal-50 p-4 text-left"
         data-testid="ai-comment"
       >
-        <h2 className="mb-2 text-lg font-bold text-white">AI 분석 코멘트</h2>
+        <h2 className="mb-2 text-lg font-bold text-slate-900">AI 분석 코멘트</h2>
         {loading ? (
-          <p className="text-sm text-cyan" data-testid="ai-loading">
+          <p className="text-sm text-teal-600" data-testid="ai-loading">
             분석 중입니다...
           </p>
         ) : (
           <p
-            className="whitespace-pre-line text-sm leading-relaxed text-white"
+            className="whitespace-pre-line text-sm leading-relaxed text-slate-900"
             data-testid="ai-comment-text"
           >
             {comment}

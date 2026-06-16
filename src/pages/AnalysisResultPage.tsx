@@ -21,20 +21,20 @@ const TABS: { id: SubTab; label: string }[] = [
   { id: 'summary', label: 'AI 종합 분석' },
 ]
 
-/** 발언자별 배경색 (다크 위 은은한 틴트, 최대 12색) */
+/** 발언자별 배경색 (화이트 위 은은한 틴트, 최대 12색) */
 const SPEAKER_COLORS = [
-  'bg-cyan/[0.08]',
-  'bg-purple/[0.12]',
-  'bg-gold/[0.10]',
-  'bg-danger/[0.10]',
-  'bg-cyan/[0.16]',
-  'bg-purple/[0.20]',
-  'bg-gold/[0.18]',
-  'bg-obsidian/[0.05]',
-  'bg-cyan/[0.12]',
-  'bg-purple/[0.08]',
-  'bg-gold/[0.14]',
-  'bg-obsidian/[0.10]',
+  'bg-teal-50',
+  'bg-violet-50',
+  'bg-amber-50',
+  'bg-rose-50',
+  'bg-sky-50',
+  'bg-emerald-50',
+  'bg-orange-50',
+  'bg-slate-100',
+  'bg-cyan-50',
+  'bg-fuchsia-50',
+  'bg-lime-50',
+  'bg-indigo-50',
 ]
 
 /** ms → "m:ss" */
@@ -177,12 +177,12 @@ export function AnalysisResultPage({
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-5 px-4 py-8">
       <header>
-        <p className="text-sm font-medium text-cyan">분석 결과</p>
-        <h1 className="text-2xl font-bold text-white">{sessionTitle}</h1>
+        <p className="text-sm font-medium text-teal-600">분석 결과</p>
+        <h1 className="text-2xl font-bold text-slate-900">{sessionTitle}</h1>
       </header>
 
       {/* 서브 탭 */}
-      <div className="flex flex-wrap gap-1 border-b border-cyan/10">
+      <div className="flex flex-wrap gap-1 border-b border-gray-200">
         {TABS.map(({ id, label }) => (
           <button
             key={id}
@@ -190,8 +190,8 @@ export function AnalysisResultPage({
             onClick={() => setTab(id)}
             className={`-mb-px border-b-2 px-3 py-2 text-sm font-semibold transition-colors ${
               tab === id
-                ? 'border-cyan text-cyan'
-                : 'border-transparent text-platinum/60 hover:text-platinum'
+                ? 'border-teal-600 text-teal-600'
+                : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
           >
             {label}
@@ -202,18 +202,18 @@ export function AnalysisResultPage({
       {/* 탭 1: 발언 네트워크 지도 */}
       {tab === 'network' && (
         <section className="flex flex-col items-center gap-4">
-          <div className="rounded-xl border border-cyan/10 bg-obsidian p-4 shadow-sm">
+          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
             <HarknessTable students={students} speechRecords={speechRecords} readOnly />
           </div>
           <div className="flex flex-wrap justify-center gap-3 text-sm">
-            <span className="rounded-lg bg-obsidian/5 px-3 py-1.5 text-platinum">
+            <span className="rounded-lg bg-slate-100 px-3 py-1.5 text-slate-700">
               총 발언 수: <b>{utterances.length}</b>회
             </span>
-            <span className="rounded-lg bg-obsidian/5 px-3 py-1.5 text-platinum">
+            <span className="rounded-lg bg-slate-100 px-3 py-1.5 text-slate-700">
               참여 학생 수: <b>{nodeNames.length}</b>명
             </span>
             {isolated.length === 0 ? (
-              <span className="rounded-lg bg-cyan/10 px-3 py-1.5 font-medium text-cyan">
+              <span className="rounded-lg bg-teal-50 px-3 py-1.5 font-medium text-teal-600">
                 ✓ 소외 학생 없음
               </span>
             ) : (
@@ -232,7 +232,7 @@ export function AnalysisResultPage({
             <button
               type="button"
               onClick={handleCopy}
-              className="rounded-lg bg-obsidian/10 px-3 py-1.5 text-sm font-medium text-white hover:bg-obsidian/20"
+              className="rounded-lg bg-slate-200 px-3 py-1.5 text-sm font-medium text-slate-900 hover:bg-slate-200"
             >
               {copied ? '복사됨!' : '전체 텍스트 복사'}
             </button>
@@ -241,13 +241,13 @@ export function AnalysisResultPage({
             {utterances.map((u, i) => (
               <li
                 key={i}
-                className={`rounded-lg px-3 py-2 ${colorBySpeaker.get(u.speaker) ?? 'bg-obsidian/5'}`}
+                className={`rounded-lg px-3 py-2 ${colorBySpeaker.get(u.speaker) ?? 'bg-slate-100'}`}
               >
-                <div className="mb-0.5 flex items-center gap-2 text-xs text-platinum/60">
-                  <span className="font-semibold text-platinum">{u.speaker}</span>
+                <div className="mb-0.5 flex items-center gap-2 text-xs text-slate-500">
+                  <span className="font-semibold text-slate-700">{u.speaker}</span>
                   <span>{msToClock(u.start)}</span>
                 </div>
-                <p className="text-sm text-white">{u.text}</p>
+                <p className="text-sm text-slate-900">{u.text}</p>
               </li>
             ))}
           </ul>
@@ -260,10 +260,10 @@ export function AnalysisResultPage({
           {individualReports.map((report) => (
             <article
               key={report.studentName}
-              className="rounded-xl border border-cyan/10 bg-obsidian p-5 shadow-sm"
+              className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
             >
               <div className="flex items-center justify-between gap-3">
-                <h3 className="text-lg font-bold text-white">{report.studentName}</h3>
+                <h3 className="text-lg font-bold text-slate-900">{report.studentName}</h3>
                 <div className="flex items-center gap-3">
                   <StarRating score={report.participationScore} />
                   <button
@@ -274,14 +274,14 @@ export function AnalysisResultPage({
                         exportToPDF(report.studentName, report, sessionTitle),
                       )
                     }
-                    className="shrink-0 rounded-lg bg-obsidian/5 px-3 py-1.5 text-xs font-medium text-platinum/80 hover:bg-obsidian/15 disabled:opacity-60"
+                    className="shrink-0 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-200 disabled:opacity-60"
                   >
                     {pdfLabel(`s-${report.studentName}`, 'PDF 저장')}
                   </button>
                 </div>
               </div>
 
-              <div className="mt-2 flex gap-4 text-sm text-platinum/80">
+              <div className="mt-2 flex gap-4 text-sm text-slate-600">
                 <span>
                   총 발언 <b>{report.totalSpeeches}</b>회
                 </span>
@@ -292,12 +292,12 @@ export function AnalysisResultPage({
 
               {report.keyQuotes.length > 0 && (
                 <div className="mt-3">
-                  <p className="mb-1 text-xs font-semibold text-platinum/60">대표 발언</p>
+                  <p className="mb-1 text-xs font-semibold text-slate-500">대표 발언</p>
                   <div className="flex flex-col gap-1">
                     {report.keyQuotes.map((q, i) => (
                       <blockquote
                         key={i}
-                        className="border-l-4 border-cyan/40 bg-cyan/10 px-3 py-1.5 text-sm italic text-platinum"
+                        className="border-l-4 border-gray-300 bg-teal-50 px-3 py-1.5 text-sm italic text-slate-700"
                       >
                         “{q}”
                       </blockquote>
@@ -308,12 +308,12 @@ export function AnalysisResultPage({
 
               {report.strengths.length > 0 && (
                 <div className="mt-3">
-                  <p className="mb-1 text-xs font-semibold text-platinum/60">잘한 점</p>
+                  <p className="mb-1 text-xs font-semibold text-slate-500">잘한 점</p>
                   <div className="flex flex-wrap gap-1.5">
                     {report.strengths.map((s, i) => (
                       <span
                         key={i}
-                        className="rounded-full bg-cyan/15 px-2.5 py-1 text-xs font-medium text-cyan"
+                        className="rounded-full bg-teal-50 px-2.5 py-1 text-xs font-medium text-teal-600"
                       >
                         {s}
                       </span>
@@ -324,12 +324,12 @@ export function AnalysisResultPage({
 
               {report.improvements.length > 0 && (
                 <div className="mt-3">
-                  <p className="mb-1 text-xs font-semibold text-platinum/60">성장 포인트</p>
+                  <p className="mb-1 text-xs font-semibold text-slate-500">성장 포인트</p>
                   <div className="flex flex-wrap gap-1.5">
                     {report.improvements.map((s, i) => (
                       <span
                         key={i}
-                        className="rounded-full bg-gold/15 px-2.5 py-1 text-xs font-medium text-gold"
+                        className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-500"
                       >
                         {s}
                       </span>
@@ -345,7 +345,7 @@ export function AnalysisResultPage({
       {/* 탭 4: AI 종합 분석 */}
       {tab === 'summary' && (
         <section className="flex flex-col gap-4">
-          <blockquote className="rounded-xl border-l-4 border-cyan/60 bg-cyan/10 p-5 text-lg font-medium leading-relaxed text-white">
+          <blockquote className="rounded-xl border-l-4 border-gray-400 bg-teal-50 p-5 text-lg font-medium leading-relaxed text-slate-900">
             {analysisResult.overallAnalysis}
           </blockquote>
 
@@ -363,11 +363,11 @@ export function AnalysisResultPage({
           </div>
 
           {discussionFlowAnalysis.suggestedNextTopics.length > 0 && (
-            <div className="rounded-xl border border-cyan/10 bg-obsidian p-5 shadow-sm">
-              <h3 className="mb-2 text-base font-semibold text-white">
+            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+              <h3 className="mb-2 text-base font-semibold text-slate-900">
                 다음 토론 추천 주제
               </h3>
-              <ol className="flex list-inside list-decimal flex-col gap-1.5 text-sm text-platinum">
+              <ol className="flex list-inside list-decimal flex-col gap-1.5 text-sm text-slate-700">
                 {discussionFlowAnalysis.suggestedNextTopics.map((topic, i) => (
                   <li key={i}>{topic}</li>
                 ))}
@@ -381,7 +381,7 @@ export function AnalysisResultPage({
             onClick={() =>
               runExport('full', () => exportFullReportToPDF(analysisResult, sessionTitle))
             }
-            className="self-center rounded-lg bg-cyan px-5 py-2.5 text-sm font-semibold text-void shadow-glow hover:bg-cyan/80 disabled:opacity-60"
+            className="self-center rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-700 disabled:opacity-60"
           >
             {pdfLabel('full', '전체 리포트 PDF 저장')}
           </button>
@@ -389,21 +389,21 @@ export function AnalysisResultPage({
       )}
 
       {/* 하단 공통 영역 */}
-      <div className="mt-2 flex justify-between gap-3 border-t border-cyan/10 pt-5">
+      <div className="mt-2 flex justify-between gap-3 border-t border-gray-200 pt-5">
         <button
           type="button"
           disabled={pdfStatus['full'] === 'saving'}
           onClick={() =>
             runExport('full', () => exportFullReportToPDF(analysisResult, sessionTitle))
           }
-          className="rounded-lg bg-obsidian/10 px-4 py-2 text-sm font-semibold text-white hover:bg-obsidian/20 disabled:opacity-60"
+          className="rounded-lg bg-slate-200 px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-200 disabled:opacity-60"
         >
           {pdfLabel('full', 'PDF로 저장')}
         </button>
         <button
           type="button"
           onClick={onNewSession}
-          className="rounded-lg bg-cyan px-4 py-2 text-sm font-semibold text-void shadow-glow hover:bg-cyan/80"
+          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-700"
         >
           새 세션 시작
         </button>
@@ -418,11 +418,11 @@ function StarRating({ score }: { score: number }) {
   return (
     <div className="flex items-center gap-1" title={`참여도 ${score}/10`}>
       {Array.from({ length: 5 }, (_, i) => (
-        <span key={i} className={i < filled ? 'text-gold' : 'text-platinum/30'}>
+        <span key={i} className={i < filled ? 'text-amber-500' : 'text-slate-400'}>
           ★
         </span>
       ))}
-      <span className="ml-1 text-xs text-platinum/40">{score}/10</span>
+      <span className="ml-1 text-xs text-slate-400">{score}/10</span>
     </div>
   )
 }
@@ -435,10 +435,10 @@ interface FlowCardProps {
 
 function FlowCard({ label, value, tone }: FlowCardProps) {
   const valueColor =
-    tone === 'warn' ? 'text-danger' : tone === 'ok' ? 'text-cyan' : 'text-white'
+    tone === 'warn' ? 'text-danger' : tone === 'ok' ? 'text-teal-600' : 'text-slate-900'
   return (
-    <div className="rounded-xl border border-cyan/10 bg-obsidian p-4 shadow-sm">
-      <p className="text-xs font-medium text-platinum/60">{label}</p>
+    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <p className="text-xs font-medium text-slate-500">{label}</p>
       <p className={`mt-1 text-sm font-semibold ${valueColor}`}>{value}</p>
     </div>
   )

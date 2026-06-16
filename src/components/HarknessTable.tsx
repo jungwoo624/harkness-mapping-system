@@ -26,20 +26,20 @@ const LABEL_GAP = 16
 /** 같은 학생 쌍의 중복 연결을 구분하기 위한 곡률 간격(px) */
 const CURVE_STEP = 30
 
-// Cyber-Premium 팔레트를 SVG fill/stroke에 hex로 직접 적용
-const TABLE_STROKE = '#1f5a5a' // Midnight Teal 계열 (은은한 테이블 외곽)
-const SEAT_STROKE = '#00b3b3' // 딤 Cyan (좌석 기본 테두리)
-const SEAT_SELECTED_STROKE = '#FFD700' // Cyber Gold (발언자 강조)
-const LABEL_DARK = '#E5E5E5' // Platinum (기본 이름표)
-const LABEL_WHITE = '#ffffff'
-const LABEL_PILL = '#003333' // Midnight Teal (상위 발언자 이름표 배경)
-const ARROW_COLOR = '#00FFFF' // Neon Cyan (발언 화살표)
+// 라이트 테마용 SVG fill/stroke (화이트 배경 기준)
+const TABLE_STROKE = '#cbd5e1' // slate-300 (은은한 테이블 외곽)
+const SEAT_STROKE = '#0d9488' // teal-600 (좌석 기본 테두리)
+const SEAT_SELECTED_STROKE = '#f59e0b' // amber-500 (발언자 강조)
+const LABEL_DARK = '#0f172a' // slate-900 (이름표)
+const LABEL_WHITE = '#0f172a'
+const LABEL_PILL = '#ccfbf1' // teal-100 (상위 발언자 이름표 배경)
+const ARROW_COLOR = '#14b8a6' // teal-500 (발언 화살표)
 
-// 발언 횟수 구간별 좌석 색상 (Void→Neon Cyan으로 강해짐)
-const COLOR_NONE = '#222222' // 0회: 어두운 회색
-const COLOR_LOW = '#0a4d4d' // 1-2회: 딤 틸
-const COLOR_MID = '#00a3a3' // 3-5회: 중간 시안
-const COLOR_HIGH = '#00FFFF' // 6회+: 네온 시안
+// 발언 횟수 구간별 좌석 색상 (White→Teal로 진해짐)
+const COLOR_NONE = '#f1f5f9' // 0회: slate-100
+const COLOR_LOW = '#99f6e4' // 1-2회: teal-200
+const COLOR_MID = '#2dd4bf' // 3-5회: teal-400
+const COLOR_HIGH = '#0d9488' // 6회+: teal-600
 
 /** 특정 학생이 발언자인 기록 수(= 총 발언 횟수)를 센다. */
 function countSpeeches(records: SpeechRecord[], studentId: string): number {
@@ -169,7 +169,7 @@ export function HarknessTable({
   return (
     <div className="flex flex-col items-center gap-3">
       {!readOnly && (
-        <p className="text-sm font-medium text-cyan" data-testid="status-text">
+        <p className="text-sm font-medium text-teal-600" data-testid="status-text">
           {statusText}
         </p>
       )}
@@ -267,7 +267,7 @@ export function HarknessTable({
         })}
       </svg>
 
-      <p className="text-sm text-platinum/60" data-testid="record-count">
+      <p className="text-sm text-slate-500" data-testid="record-count">
         총 발언 기록: {speechRecords.length}건
       </p>
     </div>

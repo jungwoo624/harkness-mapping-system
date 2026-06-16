@@ -11,40 +11,24 @@
 
   body {
     margin: 0;
-    background-color: #050505; /* Void Black */
-    color: #ffffff;
+    background-color: #ffffff; /* White tone */
+    color: #0f172a; /* slate-900 */
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
 
-  /* Void Black 위 은은한 Midnight Teal 그라데이션 (깊이감) */
+  /* 화이트 위 아주 옅은 틸 하이라이트 (깊이감, 절제) */
   body {
-    background-image:
-      radial-gradient( circle at 15% 0%, rgba(0, 51, 51, 0.55), transparent 45%),
-      radial-gradient(circle at 85% 100%, rgba(0, 51, 51, 0.4), transparent 50%);
+    background-image: radial-gradient(
+      circle at 50% -10%,
+      rgba(13, 148, 136, 0.06),
+      transparent 55%
+    );
     background-attachment: fixed;
   }
 
   ::selection {
-    background: rgba(0, 255, 255, 0.25);
-    color: #ffffff;
-  }
-}
-
-@layer components {
-  /* Neon Cyan 텍스트 글로우 */
-  .text-glow {
-    text-shadow: 0 0 12px rgba(0, 255, 255, 0.55);
-  }
-
-  .text-glow-gold {
-    text-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
-  }
-
-  /* 카드 기본 (Obsidian + Cyan 테두리 hairline) */
-  .card-cyber {
-    background-color: #1a1a1a;
-    border: 1px solid rgba(0, 255, 255, 0.12);
-    border-radius: 0.75rem;
+    background: rgba(13, 148, 136, 0.18);
+    color: #0f172a;
   }
 }
