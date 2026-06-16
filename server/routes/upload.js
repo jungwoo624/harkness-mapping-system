@@ -4,7 +4,7 @@ const express = require('express');
 const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 
-const { extractAudio } = require('../utils/extractAudio');
+const { startAnalysis } = require('./analysis');
 
 const router = express.Router();
 
@@ -65,6 +65,14 @@ router.post('/', (req, res) => {
     // 저장된 파일명(uuid)을 jobId로 사용
     const jobId = path.parse(req.file.filename).name;
 
+    // 클라이언트가 함께 보낸 메타데이터(JSON) 파싱
+    let metadata = {};
+    try {
+      metadata = JSON.parse(req.body.metadata || '{}');
+    } catch {
+      metadata = {};
+    }
+
     console.log(
       `[upload] 저장 완료 | jobId=${jobId} | 원본=${req.file.originalname} | ` +
         `저장명=${req.file.filename} | 크기=${req.file.size} bytes`,
@@ -77,9 +85,10 @@ router.post('/', (req, res) => {
       fileSize: req.file.size,
     });
 
-    // 음성 추출은 백그라운드로 비동기 진행 (응답을 막지 않음)
-    extractAudio(req.file.path, jobId).catch((err) => {
-      console.error(err.message);
+    // 응답 후 분석 파이프라인을 백그라운드로 자동 시작
+    // (파이프라인 첫 단계가 음성 추출이므로 별도 extractAudio 호출은 하지 않는다)
+    startAnalysis(jobId, metadata.studentNames || [], metadata.title || '').catch((err) => {
+      console.error(`[${jobId}] 분석 시작 실패: ${err.message}`);
     });
   });
 });
