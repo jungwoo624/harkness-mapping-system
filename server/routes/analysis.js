@@ -80,14 +80,20 @@ async function startAnalysis(jobId, studentNames, title) {
     setStatus(jobId, 'transcribing', 30, '음성을 텍스트로 변환하고 있습니다...');
     const transcript = await transcribeWithDiarization(audioPath, names, jobId);
 
-    // ③ 분석 (Claude)
+    // ③ 분석 (Claude) — 키 없음/호출 실패 시 전사 기반 기본 리포트로 폴백
     setStatus(jobId, 'analyzing', 70, 'AI가 토론을 분석하고 있습니다...');
-    const analysis = await analyzeHarknessDiscussion({
-      utterances: transcript.utterances,
-      studentNames: names,
-      title,
-      jobId,
-    });
+    let analysis;
+    try {
+      analysis = await analyzeHarknessDiscussion({
+        utterances: transcript.utterances,
+        studentNames: names,
+        title,
+        jobId,
+      });
+    } catch (err) {
+      console.warn(`[${jobId}] Claude 분석 생략 — 기본 리포트로 대체: ${err.message}`);
+      analysis = buildBasicReport(transcript, names);
+    }
 
     // ④ 완료
     const result = {
@@ -117,6 +123,61 @@ async function startAnalysis(jobId, studentNames, title) {
     });
     console.error(`[${jobId}] 분석 실패: ${err.message}`);
   }
+}
+
+/**
+ * Claude를 사용할 수 없을 때(키 없음/오류) 전사 결과만으로 만드는 기본 리포트.
+ * 정량 지표(발언 수/시간/독점·소외)는 채우고, 질적 피드백은 비워 둔다.
+ */
+function buildBasicReport(transcript, studentNames) {
+  const names = Array.isArray(studentNames) ? studentNames.filter(Boolean) : [];
+  const utterances = transcript.utterances || [];
+
+  const counts = new Map();
+  const durations = new Map();
+  for (const u of utterances) {
+    counts.set(u.speaker, (counts.get(u.speaker) || 0) + 1);
+    const sec = (u.end - u.start) / 1000;
+    durations.set(u.speaker, (durations.get(u.speaker) || 0) + (sec > 0 ? sec : 0));
+  }
+
+  const speakers = names.length > 0 ? names : [...counts.keys()];
+  const total = utterances.length;
+
+  const individualReports = speakers.map((name) => ({
+    studentName: name,
+    totalSpeeches: counts.get(name) || 0,
+    totalDurationSeconds: Math.round(durations.get(name) || 0),
+    keyQuotes: [],
+    strengths: [],
+    improvements: [],
+    participationScore: 0,
+  }));
+
+  // 독점/소외 도출
+  let dominantSpeaker = null;
+  if (total > 0) {
+    const top = individualReports.reduce((a, b) => (b.totalSpeeches > a.totalSpeeches ? b : a));
+    if (top.totalSpeeches / total >= 0.4) dominantSpeaker = top.studentName;
+  }
+  const isolatedStudents = individualReports
+    .filter((r) => r.totalSpeeches === 0)
+    .map((r) => r.studentName);
+
+  return {
+    overallAnalysis:
+      'AI 심층 분석(Claude)은 ANTHROPIC_API_KEY 설정 후 제공됩니다. ' +
+      `현재는 전사 기반 기본 통계만 표시합니다. (총 발언 ${total}건, 화자 ${transcript.speakerCount}명)`,
+    speakerMapping: [],
+    individualReports,
+    discussionFlowAnalysis: {
+      dominantSpeaker,
+      isolatedStudents,
+      turnTakingQuality: '',
+      suggestedNextTopics: [],
+    },
+    unavailable: true,
+  };
 }
 
 /**
