@@ -4,7 +4,7 @@ const express = require('express');
 
 const { extractAudio } = require('../utils/extractAudio');
 const { transcribeWithDiarization } = require('../utils/assemblyai');
-const { analyzeDiscussion } = require('../utils/claude');
+const { analyzeHarknessDiscussion, analyzeDiscussion } = require('../utils/claude');
 
 const router = express.Router();
 
@@ -80,9 +80,14 @@ async function startAnalysis(jobId, studentNames, title) {
     setStatus(jobId, 'transcribing', 30, '음성을 텍스트로 변환하고 있습니다...');
     const transcript = await transcribeWithDiarization(audioPath, names, jobId);
 
-    // ③ 분석 (다음 단계에서 Claude 연동, 지금은 mock)
+    // ③ 분석 (Claude)
     setStatus(jobId, 'analyzing', 70, 'AI가 토론을 분석하고 있습니다...');
-    const analysis = await analyzeTranscriptMock(transcript, names, title);
+    const analysis = await analyzeHarknessDiscussion({
+      utterances: transcript.utterances,
+      studentNames: names,
+      title,
+      jobId,
+    });
 
     // ④ 완료
     const result = {
@@ -112,20 +117,6 @@ async function startAnalysis(jobId, studentNames, title) {
     });
     console.error(`[${jobId}] 분석 실패: ${err.message}`);
   }
-}
-
-/**
- * 임시 분석 함수 (mock).
- * TODO(다음 단계): server/utils/claude.js 의 analyzeDiscussion 으로 교체.
- */
-async function analyzeTranscriptMock(transcript, studentNames, title) {
-  return {
-    summary:
-      `'${title || '제목 없는 토론'}' 분석(임시): ` +
-      `화자 ${transcript.speakerCount}명, 발언 ${transcript.utterances.length}건.`,
-    comment: '실제 AI 분석 코멘트는 다음 단계에서 Claude로 연결됩니다. (mock)',
-    isMock: true,
-  };
 }
 
 /**
