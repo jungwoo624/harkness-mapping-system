@@ -6,8 +6,10 @@ interface HarknessTableProps {
   students: Student[]
   /** 누적된 발언 기록 (상위에서 관리) */
   speechRecords: SpeechRecord[]
-  /** 새 발언 기록이 생성될 때 호출 */
-  onAddSpeech: (record: SpeechRecord) => void
+  /** 새 발언 기록이 생성될 때 호출 (읽기 전용이면 생략 가능) */
+  onAddSpeech?: (record: SpeechRecord) => void
+  /** true면 클릭/선택이 비활성화되어 최종 상태만 보여준다 */
+  readOnly?: boolean
 }
 
 const CANVAS_WIDTH = 500
@@ -102,6 +104,7 @@ export function HarknessTable({
   students,
   speechRecords,
   onAddSpeech,
+  readOnly = false,
 }: HarknessTableProps) {
   const [selectedSpeakerId, setSelectedSpeakerId] = useState<string | null>(null)
 
@@ -109,6 +112,7 @@ export function HarknessTable({
     students.find((student) => student.id === id)
 
   const handleSeatClick = (studentId: string): void => {
+    if (readOnly) return
     if (selectedSpeakerId === null) {
       setSelectedSpeakerId(studentId)
       return
@@ -118,7 +122,7 @@ export function HarknessTable({
       return
     }
     const now = Date.now()
-    onAddSpeech({
+    onAddSpeech?.({
       id: `${now}-${speechRecords.length}`,
       speakerId: selectedSpeakerId,
       targetId: studentId,
@@ -163,9 +167,11 @@ export function HarknessTable({
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <p className="text-sm font-medium text-slate-700" data-testid="status-text">
-        {statusText}
-      </p>
+      {!readOnly && (
+        <p className="text-sm font-medium text-slate-700" data-testid="status-text">
+          {statusText}
+        </p>
+      )}
 
       <svg
         width={CANVAS_WIDTH}
@@ -225,7 +231,7 @@ export function HarknessTable({
             <g
               key={student.id}
               onClick={() => handleSeatClick(student.id)}
-              style={{ cursor: 'pointer' }}
+              style={{ cursor: readOnly ? 'default' : 'pointer' }}
               data-testid={`seat-${student.id}`}
             >
               <circle

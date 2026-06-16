@@ -1,0 +1,366 @@
+import { useMemo, useState } from 'react'
+import { HarknessTable } from '../components/HarknessTable'
+import { createStudents } from '../utils/session'
+import type { SpeechRecord, Student } from '../types'
+import type { AnalysisResult, Utterance } from '../data/mockAnalysisResult'
+
+interface AnalysisResultPageProps {
+  analysisResult: AnalysisResult
+  sessionTitle: string
+  /** "새 세션 시작" 클릭 시 (영상 분석 초기화) */
+  onNewSession?: () => void
+}
+
+type SubTab = 'network' | 'transcript' | 'individual' | 'summary'
+
+const TABS: { id: SubTab; label: string }[] = [
+  { id: 'network', label: '발언 네트워크 지도' },
+  { id: 'transcript', label: '전체 대화 텍스트' },
+  { id: 'individual', label: '학생별 개인 리포트' },
+  { id: 'summary', label: 'AI 종합 분석' },
+]
+
+/** 발언자별 배경색 (최대 12색) */
+const SPEAKER_COLORS = [
+  'bg-blue-50',
+  'bg-emerald-50',
+  'bg-amber-50',
+  'bg-rose-50',
+  'bg-violet-50',
+  'bg-cyan-50',
+  'bg-lime-50',
+  'bg-orange-50',
+  'bg-pink-50',
+  'bg-teal-50',
+  'bg-indigo-50',
+  'bg-fuchsia-50',
+]
+
+/** ms → "m:ss" */
+function msToClock(ms: number): string {
+  const total = Math.floor(ms / 1000)
+  const m = Math.floor(total / 60)
+  const s = total % 60
+  return `${m}:${s.toString().padStart(2, '0')}`
+}
+
+/** 초 → "m분 s초" */
+function secondsToText(sec: number): string {
+  const m = Math.floor(sec / 60)
+  const s = sec % 60
+  return m > 0 ? `${m}분 ${s}초` : `${s}초`
+}
+
+/** 학생 이름 배열로 원형 배치된 Student[] 생성 */
+function buildStudents(studentNames: string[]): Student[] {
+  const base = createStudents(studentNames.length)
+  return base.map((s, i) => ({ ...s, name: studentNames[i] || s.name }))
+}
+
+/**
+ * 연속된 utterances에서 화자가 바뀔 때마다
+ * 이전 화자 → 다음 화자로 SpeechRecord를 생성한다.
+ */
+function buildSpeechRecords(utterances: Utterance[], students: Student[]): SpeechRecord[] {
+  const idByName = new Map(students.map((s) => [s.name, s.id]))
+  const records: SpeechRecord[] = []
+  for (let i = 1; i < utterances.length; i += 1) {
+    const prev = utterances[i - 1].speaker
+    const curr = utterances[i].speaker
+    if (prev === curr) continue
+    const speakerId = idByName.get(prev)
+    const targetId = idByName.get(curr)
+    if (!speakerId || !targetId) continue
+    records.push({
+      id: `u${i}`,
+      speakerId,
+      targetId,
+      timestamp: utterances[i].start,
+    })
+  }
+  return records
+}
+
+export function AnalysisResultPage({
+  analysisResult,
+  sessionTitle,
+  onNewSession,
+}: AnalysisResultPageProps) {
+  const [tab, setTab] = useState<SubTab>('network')
+  const [copied, setCopied] = useState(false)
+
+  const { utterances, studentNames, individualReports, discussionFlowAnalysis } =
+    analysisResult
+
+  const students = useMemo(() => buildStudents(studentNames), [studentNames])
+  const speechRecords = useMemo(
+    () => buildSpeechRecords(utterances, students),
+    [utterances, students],
+  )
+
+  // 화자별 색상 매핑
+  const colorBySpeaker = useMemo(() => {
+    const map = new Map<string, string>()
+    studentNames.forEach((name, i) => {
+      map.set(name, SPEAKER_COLORS[i % SPEAKER_COLORS.length])
+    })
+    return map
+  }, [studentNames])
+
+  const isolated = discussionFlowAnalysis.isolatedStudents
+
+  const handleCopy = async (): Promise<void> => {
+    const text = utterances
+      .map((u) => `${u.speaker} (${msToClock(u.start)}): ${u.text}`)
+      .join('\n')
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch {
+      setCopied(false)
+    }
+  }
+
+  return (
+    <div className="mx-auto flex max-w-3xl flex-col gap-5 px-4 py-8">
+      <header>
+        <p className="text-sm font-medium text-indigo-600">분석 결과</p>
+        <h1 className="text-2xl font-bold text-slate-800">{sessionTitle}</h1>
+      </header>
+
+      {/* 서브 탭 */}
+      <div className="flex flex-wrap gap-1 border-b border-slate-200">
+        {TABS.map(({ id, label }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setTab(id)}
+            className={`-mb-px border-b-2 px-3 py-2 text-sm font-semibold transition-colors ${
+              tab === id
+                ? 'border-indigo-600 text-indigo-600'
+                : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* 탭 1: 발언 네트워크 지도 */}
+      {tab === 'network' && (
+        <section className="flex flex-col items-center gap-4">
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <HarknessTable students={students} speechRecords={speechRecords} readOnly />
+          </div>
+          <div className="flex flex-wrap justify-center gap-3 text-sm">
+            <span className="rounded-lg bg-slate-100 px-3 py-1.5 text-slate-700">
+              총 발언 수: <b>{utterances.length}</b>회
+            </span>
+            <span className="rounded-lg bg-slate-100 px-3 py-1.5 text-slate-700">
+              참여 학생 수: <b>{studentNames.length}</b>명
+            </span>
+            {isolated.length === 0 ? (
+              <span className="rounded-lg bg-emerald-50 px-3 py-1.5 font-medium text-emerald-700">
+                ✓ 소외 학생 없음
+              </span>
+            ) : (
+              <span className="rounded-lg bg-rose-50 px-3 py-1.5 font-medium text-rose-600">
+                ⚠ 소외 학생: {isolated.join(', ')}
+              </span>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* 탭 2: 전체 대화 텍스트 */}
+      {tab === 'transcript' && (
+        <section className="flex flex-col gap-3">
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="rounded-lg bg-slate-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-600"
+            >
+              {copied ? '복사됨!' : '전체 텍스트 복사'}
+            </button>
+          </div>
+          <ul className="flex flex-col gap-2">
+            {utterances.map((u, i) => (
+              <li
+                key={i}
+                className={`rounded-lg px-3 py-2 ${colorBySpeaker.get(u.speaker) ?? 'bg-slate-50'}`}
+              >
+                <div className="mb-0.5 flex items-center gap-2 text-xs text-slate-500">
+                  <span className="font-semibold text-slate-700">{u.speaker}</span>
+                  <span>{msToClock(u.start)}</span>
+                </div>
+                <p className="text-sm text-slate-800">{u.text}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* 탭 3: 학생별 개인 리포트 */}
+      {tab === 'individual' && (
+        <section className="flex flex-col gap-4">
+          {individualReports.map((report) => (
+            <article
+              key={report.studentName}
+              className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-bold text-slate-800">{report.studentName}</h3>
+                <StarRating score={report.participationScore} />
+              </div>
+
+              <div className="mt-2 flex gap-4 text-sm text-slate-600">
+                <span>
+                  총 발언 <b>{report.totalSpeeches}</b>회
+                </span>
+                <span>
+                  발언 시간 <b>{secondsToText(report.totalDurationSeconds)}</b>
+                </span>
+              </div>
+
+              {report.keyQuotes.length > 0 && (
+                <div className="mt-3">
+                  <p className="mb-1 text-xs font-semibold text-slate-500">대표 발언</p>
+                  <div className="flex flex-col gap-1">
+                    {report.keyQuotes.map((q, i) => (
+                      <blockquote
+                        key={i}
+                        className="border-l-4 border-indigo-300 bg-indigo-50/50 px-3 py-1.5 text-sm italic text-slate-700"
+                      >
+                        “{q}”
+                      </blockquote>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {report.strengths.length > 0 && (
+                <div className="mt-3">
+                  <p className="mb-1 text-xs font-semibold text-slate-500">잘한 점</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {report.strengths.map((s, i) => (
+                      <span
+                        key={i}
+                        className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700"
+                      >
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {report.improvements.length > 0 && (
+                <div className="mt-3">
+                  <p className="mb-1 text-xs font-semibold text-slate-500">성장 포인트</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {report.improvements.map((s, i) => (
+                      <span
+                        key={i}
+                        className="rounded-full bg-orange-100 px-2.5 py-1 text-xs font-medium text-orange-700"
+                      >
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </article>
+          ))}
+        </section>
+      )}
+
+      {/* 탭 4: AI 종합 분석 */}
+      {tab === 'summary' && (
+        <section className="flex flex-col gap-4">
+          <blockquote className="rounded-xl border-l-4 border-indigo-400 bg-indigo-50 p-5 text-lg font-medium leading-relaxed text-slate-800">
+            {analysisResult.overallAnalysis}
+          </blockquote>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <FlowCard label="발언 분포" value={discussionFlowAnalysis.turnTakingQuality || '-'} />
+            <FlowCard
+              label="주도적 발언자"
+              value={discussionFlowAnalysis.dominantSpeaker ?? '없음'}
+            />
+            <FlowCard
+              label="소외 학생"
+              value={isolated.length > 0 ? isolated.join(', ') : '없음'}
+              tone={isolated.length > 0 ? 'warn' : 'ok'}
+            />
+          </div>
+
+          {discussionFlowAnalysis.suggestedNextTopics.length > 0 && (
+            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <h3 className="mb-2 text-base font-semibold text-slate-800">
+                다음 토론 추천 주제
+              </h3>
+              <ol className="flex list-inside list-decimal flex-col gap-1.5 text-sm text-slate-700">
+                {discussionFlowAnalysis.suggestedNextTopics.map((topic, i) => (
+                  <li key={i}>{topic}</li>
+                ))}
+              </ol>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* 하단 공통 영역 */}
+      <div className="mt-2 flex justify-between gap-3 border-t border-slate-200 pt-5">
+        <button
+          type="button"
+          disabled
+          title="다음 단계에서 구현됩니다"
+          className="rounded-lg bg-slate-200 px-4 py-2 text-sm font-semibold text-slate-400"
+        >
+          PDF로 저장
+        </button>
+        <button
+          type="button"
+          onClick={onNewSession}
+          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
+        >
+          새 세션 시작
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/** 10점 만점 점수를 별 5개로 시각화 */
+function StarRating({ score }: { score: number }) {
+  const filled = Math.round(score / 2)
+  return (
+    <div className="flex items-center gap-1" title={`참여도 ${score}/10`}>
+      {Array.from({ length: 5 }, (_, i) => (
+        <span key={i} className={i < filled ? 'text-amber-400' : 'text-slate-300'}>
+          ★
+        </span>
+      ))}
+      <span className="ml-1 text-xs text-slate-400">{score}/10</span>
+    </div>
+  )
+}
+
+interface FlowCardProps {
+  label: string
+  value: string
+  tone?: 'ok' | 'warn'
+}
+
+function FlowCard({ label, value, tone }: FlowCardProps) {
+  const valueColor =
+    tone === 'warn' ? 'text-rose-600' : tone === 'ok' ? 'text-emerald-600' : 'text-slate-800'
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <p className="text-xs font-medium text-slate-500">{label}</p>
+      <p className={`mt-1 text-sm font-semibold ${valueColor}`}>{value}</p>
+    </div>
+  )
+}
