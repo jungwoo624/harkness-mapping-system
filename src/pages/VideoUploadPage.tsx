@@ -87,6 +87,7 @@ function formatBytes(bytes: number): string {
 /**
  * 영상 분석 탭.
  * 입력(Step1~3) → 업로드/분석 진행 화면 → 완료/오류 흐름을 제공한다.
+ * ※ 라우터 도입 후에도 삭제하지 않고 AdminPage('/admin')에서 탭으로 사용한다.
  */
 export function VideoUploadPage({ onViewResult }: VideoUploadPageProps) {
   // Step 1

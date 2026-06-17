@@ -1,35 +1,33 @@
-import { StudentCard } from '../components/StudentCard'
-import mockSession from '../data/mockSession'
-import { computeParticipation, countSpeeches, formatDate } from '../utils/format'
+import { Link } from 'react-router-dom'
 
-/** 임시 데이터로 토론 세션 참여 통계를 보여주는 시작 화면 */
+/** 랜딩 페이지 (placeholder) */
 export function HomePage() {
-  const stats = computeParticipation(mockSession)
-
   return (
-    <main className="mx-auto max-w-2xl px-6 py-12">
-      <header className="mb-8">
-        <p className="text-sm font-semibold uppercase tracking-wide text-teal-600">
-          Harkness App
-        </p>
-        <h1 className="mt-1 text-3xl font-bold text-slate-900">
-          {mockSession.title}
-        </h1>
-        <p className="mt-2 text-slate-500">
-          {formatDate(mockSession.date)} · {mockSession.durationMinutes}분 · 학생{' '}
-          {mockSession.students.length}명 · 총 발언 {countSpeeches(mockSession)}건
-        </p>
-      </header>
-
-      <section className="space-y-3">
-        {stats.map((stat) => (
-          <StudentCard key={stat.studentId} stat={stat} />
-        ))}
-      </section>
-
-      <p className="mt-10 rounded-lg bg-teal-50 px-4 py-3 text-center text-sm font-medium text-teal-600">
-        ✅ React + TypeScript + Tailwind CSS 정상 동작 중
+    <main className="mx-auto max-w-3xl px-4 py-20 text-center">
+      <h1 className="font-display text-4xl font-bold tracking-tight text-teal-600 sm:text-5xl">
+        제노 리케이온
+      </h1>
+      <p className="mt-4 text-lg text-slate-700">
+        Where Human Minds and Intelligent Systems Evolve Together.
       </p>
+      <p className="mt-2 text-sm text-slate-500">
+        하크니스 토론을 매핑하고 AI로 분석하는 학습 플랫폼
+      </p>
+
+      <div className="mt-8 flex justify-center gap-3">
+        <Link
+          to="/admin"
+          className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-700"
+        >
+          토론 분석 시작
+        </Link>
+        <Link
+          to="/about"
+          className="rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:border-gray-400"
+        >
+          서비스 소개
+        </Link>
+      </div>
     </main>
   )
 }

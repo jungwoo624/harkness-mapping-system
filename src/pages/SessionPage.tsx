@@ -16,7 +16,10 @@ const STUDENT_OPTIONS = Array.from(
   (_, i) => MIN_STUDENTS + i,
 )
 
-/** 토론 세션 화면. 설정 → 진행 → 종료 단계를 관리한다. */
+/**
+ * 토론 세션 화면(수동 매핑). 설정 → 진행 → 종료 단계를 관리한다.
+ * ※ 라우터 도입 후에도 삭제하지 않고 AdminPage('/admin')에서 탭으로 사용한다.
+ */
 export function SessionPage() {
   const [phase, setPhase] = useState<Phase>('setup')
   const [title, setTitle] = useState('')
