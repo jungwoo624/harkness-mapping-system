@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
 type Mode = 'login' | 'signup'
@@ -30,8 +30,12 @@ function authErrorMessage(code: string): string {
 export function LoginPage() {
   const { signUp, login } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
 
-  const [mode, setMode] = useState<Mode>('login')
+  // ?tab=signup 으로 들어오면 회원가입 탭으로 시작
+  const [mode, setMode] = useState<Mode>(
+    searchParams.get('tab') === 'signup' ? 'signup' : 'login',
+  )
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
