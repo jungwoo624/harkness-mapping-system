@@ -10,7 +10,7 @@ const MENU = [
 
 /** 모든 페이지 상단 공통 네비게이션 바 */
 export function NavBar() {
-  const { user, logout } = useAuth()
+  const { user, role, logout } = useAuth()
   const navigate = useNavigate()
 
   const handleLogout = async (): Promise<void> => {
@@ -44,6 +44,19 @@ export function NavBar() {
               {label}
             </NavLink>
           ))}
+          {/* 관리자에게만 표시 */}
+          {role === 'admin' && (
+            <NavLink
+              to="/admin"
+              className={({ isActive }) =>
+                `text-sm font-semibold transition-colors ${
+                  isActive ? 'text-teal-600' : 'text-amber-600 hover:text-amber-700'
+                }`
+              }
+            >
+              관리자
+            </NavLink>
+          )}
         </div>
 
         {/* 로그인 상태에 따른 우측 영역 */}

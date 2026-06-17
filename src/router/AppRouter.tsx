@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom'
 import { NavBar } from '../components/NavBar'
+import { ProtectedRoute } from '../components/ProtectedRoute'
 import { HomePage } from '../pages/HomePage'
 import { AboutPage } from '../pages/AboutPage'
 import { PricingPage } from '../pages/PricingPage'
@@ -25,14 +26,40 @@ export function AppRouter() {
     <BrowserRouter>
       <Routes>
         <Route element={<Layout />}>
+          {/* 공개 */}
           <Route path="/" element={<HomePage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/learn" element={<LearnPage />} />
-          <Route path="/archive" element={<ArchivePage />} />
-          <Route path="/mypage" element={<MyPage />} />
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/admin" element={<AdminPage />} />
+
+          {/* 회원 전용 */}
+          <Route
+            path="/archive"
+            element={
+              <ProtectedRoute requireAuth>
+                <ArchivePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/mypage"
+            element={
+              <ProtectedRoute requireAuth>
+                <MyPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* 관리자 전용 */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminPage />
+              </ProtectedRoute>
+            }
+          />
           {/* 없는 경로는 홈으로 */}
           <Route path="*" element={<HomePage />} />
         </Route>
