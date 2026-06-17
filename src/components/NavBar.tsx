@@ -62,7 +62,17 @@ export function NavBar() {
         {/* 로그인 상태에 따른 우측 영역 */}
         {user ? (
           <div className="flex items-center gap-3">
-            <span className="hidden max-w-[160px] truncate text-sm text-slate-600 sm:inline">
+            <NavLink
+              to="/mypage"
+              className={({ isActive }) =>
+                `text-sm font-medium transition-colors ${
+                  isActive ? 'text-teal-600' : 'text-slate-600 hover:text-teal-600'
+                }`
+              }
+            >
+              마이페이지
+            </NavLink>
+            <span className="hidden max-w-[140px] truncate text-sm text-slate-400 sm:inline">
               {user.email}
             </span>
             <button
