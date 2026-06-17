@@ -1,6 +1,16 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { MOCK_ARCHIVE } from '../data/mockArchive'
+import { collection, getDocs, query, where } from 'firebase/firestore'
+import { db } from '../lib/firebase'
+
+interface ArchiveCard {
+  id: string
+  title: string
+  date: string
+  participantCount: number
+  summary: string
+  thumbnailUrl: string | null
+}
 
 function formatDate(iso: string): string {
   const d = new Date(iso)
@@ -10,20 +20,50 @@ function formatDate(iso: string): string {
 
 type SortOrder = 'newest' | 'oldest'
 
-/** 세션 아카이브 목록 (회원 전용) */
+/** 세션 아카이브 목록 (회원 전용) — Firestore에서 발행된 세션 로드 */
 export function ArchivePage() {
   const [keyword, setKeyword] = useState('')
   const [sort, setSort] = useState<SortOrder>('newest')
+  const [cards, setCards] = useState<ArchiveCard[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!db) {
+      setLoading(false)
+      return
+    }
+    ;(async () => {
+      try {
+        const snap = await getDocs(query(collection(db, 'sessions'), where('published', '==', true)))
+        const list: ArchiveCard[] = snap.docs.map((d) => {
+          const data = d.data()
+          return {
+            id: d.id,
+            title: (data.title as string) ?? '제목 없음',
+            date: (data.date as string) ?? '',
+            participantCount: Array.isArray(data.participants) ? data.participants.length : 0,
+            summary: (data.summary as string) ?? '',
+            thumbnailUrl: (data.thumbnailUrl as string) ?? null,
+          }
+        })
+        setCards(list)
+      } catch (err) {
+        console.error('[archive] 목록 로드 실패:', err)
+      } finally {
+        setLoading(false)
+      }
+    })()
+  }, [])
 
   const sessions = useMemo(() => {
     const kw = keyword.trim().toLowerCase()
-    return MOCK_ARCHIVE.filter((s) => s.published)
+    return cards
       .filter((s) => (kw ? s.title.toLowerCase().includes(kw) : true))
       .sort((a, b) => {
         const diff = new Date(b.date).getTime() - new Date(a.date).getTime()
         return sort === 'newest' ? diff : -diff
       })
-  }, [keyword, sort])
+  }, [cards, keyword, sort])
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-12">
@@ -51,9 +91,10 @@ export function ArchivePage() {
         </select>
       </div>
 
-      {/* 카드 그리드 */}
-      {sessions.length === 0 ? (
-        <p className="py-16 text-center text-slate-400">검색 결과가 없습니다.</p>
+      {loading ? (
+        <p className="py-16 text-center text-slate-400">불러오는 중...</p>
+      ) : sessions.length === 0 ? (
+        <p className="py-16 text-center text-slate-400">발행된 세션이 없습니다.</p>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {sessions.map((s) => (
@@ -62,15 +103,13 @@ export function ArchivePage() {
               to={`/archive/${s.id}`}
               className="group overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md"
             >
-              {/* 썸네일 */}
-              {s.thumbnail ? (
-                <img src={s.thumbnail} alt={s.title} className="aspect-video w-full object-cover" />
+              {s.thumbnailUrl ? (
+                <img src={s.thumbnailUrl} alt={s.title} className="aspect-video w-full object-cover" />
               ) : (
                 <div className="flex aspect-video items-center justify-center bg-gray-100 text-sm text-gray-400">
                   이미지 없음
                 </div>
               )}
-
               <div className="p-5">
                 <h3 className="font-semibold text-slate-900 group-hover:text-teal-600">
                   {s.title}

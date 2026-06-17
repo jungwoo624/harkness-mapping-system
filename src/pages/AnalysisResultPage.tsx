@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import { HarknessTable } from '../components/HarknessTable'
+import { PublishModal } from '../components/PublishModal'
+import { useAuth } from '../contexts/AuthContext'
 import { createStudents } from '../utils/session'
 import { exportToPDF, exportFullReportToPDF } from '../utils/exportPDF'
 import type { SpeechRecord, Student } from '../types'
@@ -99,8 +101,10 @@ export function AnalysisResultPage({
   sessionTitle,
   onNewSession,
 }: AnalysisResultPageProps) {
+  const { role } = useAuth()
   const [tab, setTab] = useState<SubTab>('network')
   const [copied, setCopied] = useState(false)
+  const [showPublish, setShowPublish] = useState(false)
   // PDF 저장 상태: key별 'saving' | 'done'
   const [pdfStatus, setPdfStatus] = useState<Record<string, 'saving' | 'done'>>({})
 
@@ -400,14 +404,34 @@ export function AnalysisResultPage({
         >
           {pdfLabel('full', 'PDF로 저장')}
         </button>
-        <button
-          type="button"
-          onClick={onNewSession}
-          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-700"
-        >
-          새 세션 시작
-        </button>
+        <div className="flex gap-2">
+          {/* 관리자 전용: 아카이브 발행 */}
+          {role === 'admin' && (
+            <button
+              type="button"
+              onClick={() => setShowPublish(true)}
+              className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-500"
+            >
+              아카이브에 발행
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onNewSession}
+            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-700"
+          >
+            새 세션 시작
+          </button>
+        </div>
       </div>
+
+      {showPublish && (
+        <PublishModal
+          result={analysisResult}
+          sessionTitle={sessionTitle}
+          onClose={() => setShowPublish(false)}
+        />
+      )}
     </div>
   )
 }
