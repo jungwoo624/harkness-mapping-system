@@ -8,6 +8,13 @@ interface ImportMetaEnv {
    * AI 호출은 백엔드(/api/analysis) 경유로 변경됨.
    */
   readonly VITE_ANTHROPIC_API_KEY?: string
+  // Firebase (.env.local)
+  readonly VITE_FIREBASE_API_KEY: string
+  readonly VITE_FIREBASE_AUTH_DOMAIN: string
+  readonly VITE_FIREBASE_PROJECT_ID: string
+  readonly VITE_FIREBASE_STORAGE_BUCKET: string
+  readonly VITE_FIREBASE_MESSAGING_SENDER_ID: string
+  readonly VITE_FIREBASE_APP_ID: string
 }
 
 interface ImportMeta {
