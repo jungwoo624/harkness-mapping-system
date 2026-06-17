@@ -6,6 +6,7 @@ import { AboutPage } from '../pages/AboutPage'
 import { PricingPage } from '../pages/PricingPage'
 import { LearnPage } from '../pages/LearnPage'
 import { ArchivePage } from '../pages/ArchivePage'
+import { ArchiveDetailPage } from '../pages/ArchiveDetailPage'
 import { MyPage } from '../pages/MyPage'
 import { LoginPage } from '../pages/LoginPage'
 import { AdminPage } from '../pages/AdminPage'
@@ -39,6 +40,14 @@ export function AppRouter() {
             element={
               <ProtectedRoute requireAuth>
                 <ArchivePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/archive/:id"
+            element={
+              <ProtectedRoute requireAuth>
+                <ArchiveDetailPage />
               </ProtectedRoute>
             }
           />
